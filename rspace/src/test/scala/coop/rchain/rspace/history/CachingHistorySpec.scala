@@ -1,13 +1,9 @@
 package coop.rchain.rspace.history
 
-import cats.implicits.catsSyntaxApplicativeId
 import coop.rchain.rspace.history.HistoryInstances.{CachingHistoryStore, MergingHistory}
 import coop.rchain.rspace.history.TestData._
 import monix.eval.Task
-import monix.execution.Scheduler.Implicits.global
 import org.scalatest.{FlatSpec, Matchers, OptionValues}
-
-import scala.concurrent.duration._
 
 class CachingHistorySpec
     extends FlatSpec
@@ -18,7 +14,7 @@ class CachingHistorySpec
   def create: (MergingHistory[Task], CachingHistoryStore[Task]) = {
     val historyStore = inMemHistoryStore
     val caching      = CachingHistoryStore(historyStore)
-    val history      = new MergingHistory[Task](History.emptyRootHash, caching)
+    val history      = new MergingHistory[Task](HistoryInstances.emptyRootHash, caching)
     (history, caching)
   }
 

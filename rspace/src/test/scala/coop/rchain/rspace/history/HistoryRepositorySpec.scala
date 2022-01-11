@@ -144,7 +144,7 @@ class HistoryRepositorySpec
     val data      = InsertData[String, String](testChannelDataPrefix, testDatum :: Nil)
     for {
       nextRepo <- repo.checkpoint(data :: Nil)
-      _        <- repo.reset(History.emptyRootHash)
+      _        <- repo.reset(HistoryInstances.emptyRootHash)
       _        <- repo.reset(nextRepo.history.root)
     } yield ()
   }
@@ -174,13 +174,14 @@ class HistoryRepositorySpec
     Datum[String]("data-" + s, false, Produce(randomBlake, randomBlake, false))
 
   protected def withEmptyRepository(f: TestHistoryRepository => Task[Unit]): Unit = {
-    val emptyHistory              = HistoryInstances.merging[Task](History.emptyRootHash, inMemHistoryStore)
+    val emptyHistory =
+      HistoryInstances.merging[Task](HistoryInstances.emptyRootHash, inMemHistoryStore)
     val pastRoots                 = rootRepository
     implicit val log: Log[Task]   = new NOPLog()
     implicit val span: Span[Task] = new NoopSpan[Task]()
 
     (for {
-      _ <- pastRoots.commit(History.emptyRootHash)
+      _ <- pastRoots.commit(HistoryInstances.emptyRootHash)
       repo = HistoryRepositoryImpl[Task, String, String, String, String](
         emptyHistory,
         pastRoots,

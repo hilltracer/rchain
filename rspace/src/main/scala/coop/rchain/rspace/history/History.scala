@@ -2,6 +2,7 @@ package coop.rchain.rspace.history
 
 import coop.rchain.rspace.hashing.Blake2b256Hash
 import coop.rchain.rspace.history.History._
+import coop.rchain.rspace.history.instances.RadixHistory
 import coop.rchain.rspace.serializers.ScodecSerialize.{RichAttempt, _}
 import coop.rchain.shared.Base16
 import scodec.bits.{BitVector, ByteVector}
@@ -43,9 +44,7 @@ trait History[F[_]] {
 
 object History {
 
-  val emptyRoot: Trie               = EmptyTrie
-  private[this] def encodeEmptyRoot = codecTrie.encode(emptyRoot).getUnsafe.toByteVector
-  val emptyRootHash: Blake2b256Hash = Blake2b256Hash.create(encodeEmptyRoot)
+  val emptyRootHash: Blake2b256Hash = RadixHistory.emptyRootHash
 
   // this mapping is kept explicit on purpose
   @inline
@@ -114,7 +113,7 @@ object Trie {
     trie match {
       case pb: PointerBlock  => pb.hash
       case s: Skip           => s.hash
-      case _: EmptyTrie.type => History.emptyRootHash
+      case _: EmptyTrie.type => HistoryInstances.emptyRootHash
     }
 }
 
