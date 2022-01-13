@@ -21,4 +21,8 @@ final case class NoOpKeyValueStore[F[_]: Applicative]() extends KeyValueStore[F]
 
   override def iterate[T](f: Iterator[(ByteBuffer, ByteBuffer)] => T): F[T] =
     f(Seq().iterator).pure[F]
+
+  override def sizeBytes(): Long = ???
+
+  override def numRecords(): Int = ???
 }

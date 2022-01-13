@@ -189,6 +189,7 @@ final class RuntimeOps[F[_]: Sync: Span: Log](
       res             <- terms.toList.traverse(processDeploy)
       finalCheckpoint <- runtime.createCheckpoint
       finalStateHash  = finalCheckpoint.root
+      _               <- Log[F].info(finalCheckpoint.debugMessage)
     } yield (finalStateHash.toByteString, res)
 
   /**

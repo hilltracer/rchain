@@ -6,7 +6,6 @@ import cats.syntax.all._
 import com.typesafe.scalalogging.Logger
 import coop.rchain.metrics.{Metrics, Span}
 import coop.rchain.rspace._
-import coop.rchain.rspace.hashing.Blake2b256Hash
 import coop.rchain.rspace.hashing.{Blake2b256Hash, StableHashProvider}
 import coop.rchain.rspace.history.ColdStoreInstances.{codecPersistedData, ColdKeyValueStore}
 import coop.rchain.rspace.history.instances.RSpaceHistoryReaderImpl
@@ -25,7 +24,9 @@ final case class HistoryRepositoryImpl[F[_]: Concurrent: Parallel: Log: Span, C,
     serializeC: Serialize[C],
     serializeP: Serialize[P],
     serializeA: Serialize[A],
-    serializeK: Serialize[K]
+    serializeK: Serialize[K],
+    sizeBytesTemp: () => Long = () => 0,
+    numRecordsTemp: () => Int = () => 0
 ) extends HistoryRepository[F, C, P, A, K] {
 
   implicit val ms = Metrics.Source(RSpaceMetricsSource, "history")
@@ -233,4 +234,8 @@ final case class HistoryRepositoryImpl[F[_]: Concurrent: Parallel: Log: Span, C,
           serializeK
         )
       )
+
+  override def sizeBytes: () => Long = sizeBytesTemp
+
+  override def numRecords: () => Int = numRecordsTemp
 }

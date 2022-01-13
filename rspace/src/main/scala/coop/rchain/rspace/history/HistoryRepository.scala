@@ -47,6 +47,10 @@ trait HistoryRepository[F[_], C, P, A, K] {
   def getSerializeC: Serialize[C]
 
   def root: Blake2b256Hash
+
+  def sizeBytes: () => Long
+
+  def numRecords: () => Int
 }
 
 object HistoryRepositoryInstances {
@@ -90,7 +94,9 @@ object HistoryRepositoryInstances {
       sc,
       sp,
       sa,
-      sk
+      sk,
+      historyKeyValueStore.sizeBytes,
+      historyKeyValueStore.numRecords
     )
   }
 }
