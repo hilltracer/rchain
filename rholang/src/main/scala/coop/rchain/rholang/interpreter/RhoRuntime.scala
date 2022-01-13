@@ -181,8 +181,8 @@ class RhoRuntimeImpl[F[_]: Sync: Span](
     )
   }
 
-  override def reset(root: Blake2b256Hash): F[Unit] = space.reset(root)
-
+  override def reset(root: Blake2b256Hash): F[Unit] =
+    space.reset(root)
   override def createCheckpoint: F[Checkpoint] = Span[F].withMarks("create-checkpoint") {
     space.createCheckpoint()
   }

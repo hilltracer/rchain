@@ -228,7 +228,13 @@ class RSpace[F[_]: Concurrent: ContextShift: Log: Metrics: Span, C, P, A, K](
       historyReader <- nextHistory.getHistoryReader(nextHistory.root)
       _             <- createNewHotStore(historyReader)
       _             <- restoreInstalls()
-    } yield Checkpoint(nextHistory.history.root, log)
+
+      debugMessage: String = {
+        "[numNodes, sizeBytes],  " + historyRepositoryAtom.get().numRecords().toString +
+          ",  " +
+          historyRepositoryAtom.get().sizeBytes().toString
+      }
+    } yield Checkpoint(nextHistory.history.root, log, debugMessage)
   }
 
   def spawn: F[ISpace[F, C, P, A, K]] = spanF.withMarks("spawn") {

@@ -5,6 +5,7 @@ import java.nio.ByteBuffer
 import cats.effect.Sync
 import cats.instances.tuple._
 import cats.syntax.all._
+import coop.rchain.models.blockImplicits.blockElementGen
 import com.google.protobuf.ByteString
 import coop.rchain.casper.protocol.{
   ApprovedBlock,
@@ -12,7 +13,6 @@ import coop.rchain.casper.protocol.{
   BlockMessage,
   BlockMessageProto
 }
-import coop.rchain.models.blockImplicits.{blockElementGen, blockElementsGen}
 import coop.rchain.models.syntax._
 import coop.rchain.store.KeyValueStore
 import monix.eval.Task
@@ -55,6 +55,10 @@ class KeyValueBlockStoreSpec extends FlatSpec with Matchers with GeneratorDriven
 
     // Delete should not be used, block store can only add data.
     override def delete(keys: Seq[ByteBuffer]): F[Int] = ???
+
+    override def sizeBytes(): Long = ???
+
+    override def numRecords(): Int = ???
   }
 
   def notImplementedKV[F[_]]: KeyValueStore[F] = new KeyValueStore[F] {
@@ -62,6 +66,10 @@ class KeyValueBlockStoreSpec extends FlatSpec with Matchers with GeneratorDriven
     override def put[T](kvPairs: Seq[(ByteBuffer, T)], toBuffer: T => ByteBuffer): F[Unit]     = ???
     override def delete(keys: Seq[ByteBuffer]): F[Int]                                         = ???
     override def iterate[T](f: Iterator[(ByteBuffer, ByteBuffer)] => T): F[T]                  = ???
+
+    override def sizeBytes(): Long = ???
+
+    override def numRecords(): Int = ???
   }
 
   implicit val scheduler = monix.execution.Scheduler.global

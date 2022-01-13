@@ -89,4 +89,8 @@ final case class LmdbKeyValueStore[F[_]: Sync](
         f(iterator.iterator.asScala.map(c => (c.key, c.`val`)))
       }
     }
+
+  override def sizeBytes(): Long = ???
+
+  override def numRecords(): Int = ???
 }
