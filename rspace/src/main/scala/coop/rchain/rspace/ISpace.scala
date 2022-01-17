@@ -1,6 +1,5 @@
 package coop.rchain.rspace
 
-import cats.Id
 import coop.rchain.rspace.hashing.Blake2b256Hash
 import coop.rchain.rspace.internal._
 
@@ -31,7 +30,7 @@ trait ISpace[F[_], C, P, A, K] extends Tuplespace[F, C, P, A, K] {
     *
     * @return A [[Checkpoint]]
     */
-  def createCheckpoint(): F[Checkpoint]
+  def createCheckpoint(blockNumber: Long = 0L): F[Checkpoint]
 
   /** Resets the store to the given root.
     *

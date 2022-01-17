@@ -68,7 +68,7 @@ object StoragePrinter {
   ): F[String] = {
     def unmatchedSends: F[List[Par]] = runtime.getHotChanges.map(getUnmatchedSends)
     for {
-      checkpoint <- runtime.createCheckpoint
+      checkpoint <- runtime.createCheckpoint()
       beforeEval <- unmatchedSends
       _ <- {
         runtime.evaluate(deploy.data.term, NormalizerEnv(deploy).toEnv)

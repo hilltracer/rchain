@@ -109,7 +109,7 @@ class CostAccountingSpec extends FlatSpec with Matchers with PropertyChecks with
           initialPhlo,
           Map.empty
         )(rand) >>= { playResult =>
-          runtime.createCheckpoint >>= {
+          runtime.createCheckpoint() >>= {
             case Checkpoint(root, log, _) =>
               replayRuntime.reset(root) >> replayRuntime.rig(log) >>
                 replayRuntime.evaluate(

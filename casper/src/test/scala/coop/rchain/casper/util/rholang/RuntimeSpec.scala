@@ -7,7 +7,7 @@ import coop.rchain.rholang.interpreter.RhoRuntime
 import coop.rchain.rholang.interpreter.accounting.Cost
 import coop.rchain.rspace.hashing.Blake2b256Hash
 import coop.rchain.rspace.syntax.rspaceSyntaxKeyValueStoreManager
-import coop.rchain.shared.{Base16, Log}
+import coop.rchain.shared.Log
 import coop.rchain.shared.scalatestcontrib.effectTest
 import coop.rchain.store.InMemoryStoreManager
 import monix.eval.Task
@@ -79,7 +79,7 @@ class RuntimeSpec extends FlatSpec with Matchers {
       runtime    <- RhoRuntime.createRuntime(store)
       r          <- runtime.evaluate(contract, Cost.UNSAFE_MAX, Map.empty)
       _          = r.errors should be(Vector.empty)
-      checkpoint <- runtime.createCheckpoint
+      checkpoint <- runtime.createCheckpoint()
       expectedHash = Blake2b256Hash.fromHex(
         "30cd98a5f066fb4c7441db2150198108f5b5d5fe9f751ceec7dc7cc4e1af784a"
       )

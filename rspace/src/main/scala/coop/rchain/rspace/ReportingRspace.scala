@@ -182,7 +182,7 @@ class ReportingRspace[F[_]: Concurrent: ContextShift: Log: Metrics: Span, C, P, 
   /** ReportingCasper would reset(empty) the report data in every createCheckpoint.
     *
     */
-  override def createCheckpoint(): F[Checkpoint] = syncF.defer {
+  override def createCheckpoint(blockNumber: Long = 0L): F[Checkpoint] = syncF.defer {
     for {
       checkpoint <- super.createCheckpoint()
       _          = softReport.update(_ => Seq.empty[ReportingEvent])

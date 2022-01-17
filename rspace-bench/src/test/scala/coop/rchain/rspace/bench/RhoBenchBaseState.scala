@@ -26,7 +26,7 @@ abstract class RhoBenchBaseState {
   def execute(bh: Blackhole): Unit = {
     val r = (for {
       result <- runTask
-      _      <- runtime.createCheckpoint
+      _      <- runtime.createCheckpoint()
     } yield result).unsafeRunSync
     bh.consume(r)
   }

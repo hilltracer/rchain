@@ -82,7 +82,7 @@ trait RhoRuntime[F[_]] extends HasCost[F] {
     * and result in a new stateHash for the new state.
     * @return
     */
-  def createCheckpoint: F[Checkpoint]
+  def createCheckpoint(blockNumber: Long = 0L): F[Checkpoint]
 
   /**
     * Reset the runtime to the specific state. Then you can operate some execution on the state.
@@ -183,9 +183,10 @@ class RhoRuntimeImpl[F[_]: Sync: Span](
 
   override def reset(root: Blake2b256Hash): F[Unit] =
     space.reset(root)
-  override def createCheckpoint: F[Checkpoint] = Span[F].withMarks("create-checkpoint") {
-    space.createCheckpoint()
-  }
+  override def createCheckpoint(blockNumber: Long = 0L): F[Checkpoint] =
+    Span[F].withMarks("create-checkpoint") {
+      space.createCheckpoint(blockNumber)
+    }
 
   override def createSoftCheckpoint
       : F[SoftCheckpoint[Par, BindPattern, ListParWithRandom, TaggedContinuation]] =
@@ -528,7 +529,7 @@ object RhoRuntime {
         (reducer, blockRef, invalidBlocks) = rhoEnv
         runtime                            = new RhoRuntimeImpl[F](reducer, rspace, cost, blockRef, invalidBlocks, mergeChs)
         _ <- if (initRegistry) {
-              bootstrapRegistry(runtime) >> runtime.createCheckpoint
+              bootstrapRegistry(runtime) >> runtime.createCheckpoint()
             } else ().pure[F]
       } yield runtime
     }
@@ -588,7 +589,7 @@ object RhoRuntime {
           mergeChs
         )
         _ <- if (initRegistry) {
-              bootstrapRegistry(runtime) >> runtime.createCheckpoint
+              bootstrapRegistry(runtime) >> runtime.createCheckpoint()
             } else ().pure[F]
       } yield runtime
     }

@@ -214,28 +214,34 @@ class RSpace[F[_]: Concurrent: ContextShift: Log: Metrics: Span, C, P, A, K](
     produceRef
   }
 
-  override def createCheckpoint(): F[Checkpoint] = spanF.withMarks("create-checkpoint") {
-    for {
-      changes <- spanF.withMarks("changes") { storeAtom.get().changes() }
-      nextHistory <- spanF.withMarks("history-checkpoint") {
-                      historyRepositoryAtom.get().checkpoint(changes.toList)
-                    }
-      _             = historyRepositoryAtom.set(nextHistory)
-      log           = eventLog.take()
-      _             = eventLog.put(Seq.empty)
-      _             = produceCounter.take()
-      _             = produceCounter.put(Map.empty.withDefaultValue(0))
-      historyReader <- nextHistory.getHistoryReader(nextHistory.root)
-      _             <- createNewHotStore(historyReader)
-      _             <- restoreInstalls()
+  override def createCheckpoint(blockNumber: Long = 0L): F[Checkpoint] =
+    spanF.withMarks("create-checkpoint") {
+      for {
+        changes <- spanF.withMarks("changes") { storeAtom.get().changes() }
+        nextHistory <- spanF.withMarks("history-checkpoint") {
+                        historyRepositoryAtom.get().checkpoint(changes.toList)
+                      }
+        _             = historyRepositoryAtom.set(nextHistory)
+        log           = eventLog.take()
+        _             = eventLog.put(Seq.empty)
+        _             = produceCounter.take()
+        _             = produceCounter.put(Map.empty.withDefaultValue(0))
+        historyReader <- nextHistory.getHistoryReader(nextHistory.root)
+        _             <- createNewHotStore(historyReader)
+        _             <- restoreInstalls()
 
-      debugMessage: String = {
-        "[numNodes, sizeBytes],  " + historyRepositoryAtom.get().numRecords().toString +
-          ",  " +
-          historyRepositoryAtom.get().sizeBytes().toString
-      }
-    } yield Checkpoint(nextHistory.history.root, log, debugMessage)
-  }
+        h = historyRepositoryAtom.get()
+        debugMessage <- if (blockNumber != 0L) for {
+                         historyNumAndSize <- h.numRecordsAndSizeBytesHistory
+                         stroreNum         = h.numRecordsStore()
+                         stroreSize        = h.sizeBytesStore()
+                         r = "[blockNumber, storeNumNodes, storeSizeBytes, historyNumNodes, historySizeBytes],  " + blockNumber.toString +
+                           ",  " + stroreNum.toString + ",  " + stroreSize.toString + ",  " + historyNumAndSize._1.toString + ",  " + historyNumAndSize._2.toString
+                       } yield r
+                       else "".pure
+
+      } yield Checkpoint(nextHistory.history.root, log, debugMessage)
+    }
 
   def spawn: F[ISpace[F, C, P, A, K]] = spanF.withMarks("spawn") {
     for {

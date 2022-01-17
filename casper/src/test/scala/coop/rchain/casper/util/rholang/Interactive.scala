@@ -46,7 +46,7 @@ class Interactive private (runtime: RhoRuntime[Task])(implicit scheduler: Schedu
   private val prettyPrinter = PrettyPrinter()
 
   private val checkpoints = new mutable.HashMap[String, Checkpoint]()
-  checkpoints.update("empty", runtime.createCheckpoint.unsafeRunSync)
+  checkpoints.update("empty", runtime.createCheckpoint().unsafeRunSync)
 
   def checkpointNames: List[String] = checkpoints.keys.toList
 
@@ -71,7 +71,7 @@ class Interactive private (runtime: RhoRuntime[Task])(implicit scheduler: Schedu
   def cleanUp(): Unit = ()
 
   def checkpoint(name: String): Unit =
-    checkpoints.update(name, runtime.createCheckpoint.unsafeRunSync)
+    checkpoints.update(name, runtime.createCheckpoint().unsafeRunSync)
   def getCheckpoint(name: String): Option[Checkpoint] = checkpoints.get(name)
 
   def restore(name: String): Boolean =

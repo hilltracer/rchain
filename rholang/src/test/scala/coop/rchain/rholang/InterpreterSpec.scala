@@ -37,12 +37,12 @@ class InterpreterSpec extends FlatSpec with Matchers {
           _                     <- success(runtime, sendRho)
           beforeError           <- storageContents(runtime)
           _                     = assert(beforeError.contains(sendRho))
-          beforeErrorCheckpoint <- runtime.createCheckpoint
+          beforeErrorCheckpoint <- runtime.createCheckpoint()
           _                     <- failure(runtime, "@1!(1) | @2!(3.noSuchMethod())")
-          afterErrorCheckpoint  <- runtime.createCheckpoint
+          afterErrorCheckpoint  <- runtime.createCheckpoint()
           _                     = assert(afterErrorCheckpoint.root == beforeErrorCheckpoint.root)
           _                     <- success(runtime, "new stdout(`rho:io:stdout`) in { stdout!(42) }")
-          afterSendCheckpoint   <- runtime.createCheckpoint
+          afterSendCheckpoint   <- runtime.createCheckpoint()
           _                     = assert(afterSendCheckpoint.root == beforeErrorCheckpoint.root)
           _                     <- success(runtime, "for (_ <- @0) { Nil }")
           finalContent          <- storageContents(runtime)

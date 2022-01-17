@@ -121,7 +121,7 @@ final class RuntimeReplayOps[F[_]: Sync: Span: Log](
         .semiflatMap(_ => mergeable.get)
         .semiflatMap { allMergeable =>
           Span[F].traceI("create-checkpoint") {
-            runtime.createCheckpoint.map(c => (c.root, allMergeable))
+            runtime.createCheckpoint().map(c => (c.root, allMergeable))
           }
         }
     }.value

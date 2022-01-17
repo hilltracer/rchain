@@ -67,7 +67,7 @@ trait ComputeMerge {
                     new Exception(s"Process deploy ${baseDeploys.filter(_.isFailed)} failed")
                   )
                   .whenA(baseDeploys.exists(_.isFailed))
-            baseCheckpoint <- runtime.createCheckpoint
+            baseCheckpoint <- runtime.createCheckpoint()
             leftDeploysRes <- leftDeploySources.toList.traverse(
                                runtime.processDeployWithMergeableData
                              )
@@ -77,7 +77,7 @@ trait ComputeMerge {
                     new Exception(s"Process deploy ${leftDeploys.filter(_.isFailed)} failed")
                   )
                   .whenA(leftDeploys.exists(_.isFailed))
-            leftCheckpoint @ _ <- runtime.createCheckpoint
+            leftCheckpoint @ _ <- runtime.createCheckpoint()
             _                  <- runtime.reset(baseCheckpoint.root)
             rightDeploysRes <- rightDeploySources.toList.traverse(
                                 runtime.processDeployWithMergeableData
@@ -88,7 +88,7 @@ trait ComputeMerge {
                     new Exception(s"Process deploy ${rightDeploys.filter(_.isFailed)} failed")
                   )
                   .whenA(rightDeploys.exists(_.isFailed))
-            rightCheckpoint @ _ <- runtime.createCheckpoint
+            rightCheckpoint @ _ <- runtime.createCheckpoint()
 
             leftIndex <- BlockIndex(
                           ByteString.copyFromUtf8("l"),

@@ -33,7 +33,7 @@ class ISpaceStub[F[_]: Applicative, C, P, A, K] extends ISpace[F, C, P, A, K] {
       persist: Boolean
   ): F[Option[(ContResult[C, P, K], Seq[Result[C, A]])]] = ???
 
-  override def createCheckpoint(): F[Checkpoint] = ???
+  override def createCheckpoint(blockNumber: Long = 0L): F[Checkpoint] = ???
 
   override def reset(root: Blake2b256Hash): F[Unit] = ???
 

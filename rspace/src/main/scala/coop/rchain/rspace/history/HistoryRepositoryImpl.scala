@@ -10,10 +10,12 @@ import coop.rchain.rspace.hashing.{Blake2b256Hash, StableHashProvider}
 import coop.rchain.rspace.history.ColdStoreInstances.{codecPersistedData, ColdKeyValueStore}
 import coop.rchain.rspace.history.instances.RSpaceHistoryReaderImpl
 import coop.rchain.rspace.serializers.ScodecSerialize._
+import coop.rchain.rspace.state.exporters.RSpaceExporterItems
 import coop.rchain.rspace.state.{RSpaceExporter, RSpaceImporter}
 import coop.rchain.shared.syntax._
 import coop.rchain.shared.{Log, Serialize}
 import fs2.Stream
+import scodec.bits.ByteVector
 
 final case class HistoryRepositoryImpl[F[_]: Concurrent: Parallel: Log: Span, C, P, A, K](
     currentHistory: History[F],
@@ -235,7 +237,24 @@ final case class HistoryRepositoryImpl[F[_]: Concurrent: Parallel: Log: Span, C,
         )
       )
 
-  override def sizeBytes: () => Long = sizeBytesTemp
+  override def sizeBytesStore: () => Long = sizeBytesTemp
 
-  override def numRecords: () => Int = numRecordsTemp
+  override def numRecordsStore: () => Int = numRecordsTemp
+
+  override def numRecordsAndSizeBytesHistory: F[(Int, Long)] =
+    for {
+      itemsAndPath <- RSpaceExporterItems.getHistory(
+                       rspaceExporter,
+                       Seq((root, None)),
+                       0,
+                       10000000,
+                       ByteVector(_)
+                     )
+      items           = itemsAndPath.items
+      numRecords: Int = items.size
+
+      sizeBytes: Long = items.map { el =>
+        32 + el._2.size
+      }.sum
+    } yield (numRecords, sizeBytes)
 }
