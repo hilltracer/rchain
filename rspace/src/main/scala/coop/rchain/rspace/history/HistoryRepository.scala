@@ -48,9 +48,11 @@ trait HistoryRepository[F[_], C, P, A, K] {
 
   def root: Blake2b256Hash
 
-  def sizeBytes: () => Long
+  def sizeBytesStore: () => Long
 
-  def numRecords: () => Int
+  def numRecordsStore: () => Int
+
+  def numRecordsAndSizeBytesHistory: F[(Int, Long)]
 }
 
 object HistoryRepositoryInstances {
@@ -70,6 +72,7 @@ object HistoryRepositoryInstances {
       sa: Serialize[A],
       sk: Serialize[K]
   ): F[HistoryRepository[F, C, P, A, K]] = {
+
     // Roots store
     val rootsRepository = new RootRepository[F](
       RootsStoreInstances.rootsStore[F](rootsKeyValueStore)

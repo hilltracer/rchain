@@ -195,7 +195,8 @@ class RuntimeManagerTest extends FlatSpec with Matchers {
                    .rigWithCheck(processedSystemDeploy, resetRuntime *> replaySysDeploy)
                    .semiflatMap {
                      case (Right(value), _) =>
-                       runtime.createCheckpoint
+                       runtime
+                         .createCheckpoint()
                          .map { checkpoint =>
                            SystemDeployReplayResult.replaySucceeded(
                              checkpoint.root.toByteString,

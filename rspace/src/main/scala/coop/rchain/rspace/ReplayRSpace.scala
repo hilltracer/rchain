@@ -242,16 +242,17 @@ class ReplayRSpace[F[_]: Concurrent: ContextShift: Log: Metrics: Span, C, P, A, 
     }
   }
 
-  override def createCheckpoint(): F[Checkpoint] = checkReplayData >> syncF.defer {
-    for {
-      changes       <- storeAtom.get().changes()
-      nextHistory   <- historyRepositoryAtom.get().checkpoint(changes.toList)
-      _             = historyRepositoryAtom.set(nextHistory)
-      historyReader <- nextHistory.getHistoryReader(nextHistory.root)
-      _             <- createNewHotStore(historyReader)
-      _             <- restoreInstalls()
-    } yield Checkpoint(nextHistory.history.root, Seq.empty)
-  }
+  override def createCheckpoint(blockNumber: Long = 0L): F[Checkpoint] =
+    checkReplayData >> syncF.defer {
+      for {
+        changes       <- storeAtom.get().changes()
+        nextHistory   <- historyRepositoryAtom.get().checkpoint(changes.toList)
+        _             = historyRepositoryAtom.set(nextHistory)
+        historyReader <- nextHistory.getHistoryReader(nextHistory.root)
+        _             <- createNewHotStore(historyReader)
+        _             <- restoreInstalls()
+      } yield Checkpoint(nextHistory.history.root, Seq.empty)
+    }
 
   override def clear(): F[Unit] = syncF.delay { replayData.clear() } >> super.clear()
 

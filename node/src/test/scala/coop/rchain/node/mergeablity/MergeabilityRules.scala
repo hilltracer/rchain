@@ -98,7 +98,7 @@ object OperationOn0Ch {
         case (runtime, _, _) =>
           for {
             _            <- runtime.evaluate(value, Cost(500L))
-            _            <- runtime.createCheckpoint
+            _            <- runtime.createCheckpoint()
             channel      = toPar(Expr(GInt(0)))
             data         <- runtime.getData(channel)
             continuation <- runtime.getContinuation(Seq(channel))

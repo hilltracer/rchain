@@ -102,7 +102,7 @@ class MergeNumberChannelSpec extends FlatSpec {
                               } yield (softPoint, numChanFinal)
                           }
             // Create checkpoint with state hash
-            endCheckpoint <- runtime.createCheckpoint
+            endCheckpoint <- runtime.createCheckpoint()
 
             (logSeq, numChanAbs) = evalResults.unzip
 
@@ -130,7 +130,7 @@ class MergeNumberChannelSpec extends FlatSpec {
         // Base state
         baseRes <- runtime.evaluate(rhoST)
         _       = assert(baseRes.errors.isEmpty, s"BASE: ${baseRes.errors}")
-        baseCp  <- runtime.createCheckpoint
+        baseCp  <- runtime.createCheckpoint()
 
         // Branch 1 change
         leftTerms = Seq(

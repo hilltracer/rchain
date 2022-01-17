@@ -63,7 +63,7 @@ class RhoTrieTraverserTest extends FlatSpec {
           hash1 <- runtime.emptyStateHash
           _     <- runtime.reset(Blake2b256Hash.fromByteString(hash1))
           rd    <- runtime.processDeploy(StandardDeploys.registry)
-          check <- runtime.createCheckpoint
+          check <- runtime.createCheckpoint()
           _     <- runtime.reset(check.root)
           initialTrieRes <- runtime.processDeploy(
                              ConstructDeploy
@@ -71,7 +71,7 @@ class RhoTrieTraverserTest extends FlatSpec {
                            )
           (initialTrie, _) = initialTrieRes
           _                = assert(!initialTrie.isFailed)
-          check2           <- runtime.createCheckpoint
+          check2           <- runtime.createCheckpoint()
           trieMapHandleR <- runtime.playExploratoryDeploy(
                              getTrieMapHandleRho,
                              check2.root.toByteString

@@ -157,7 +157,7 @@ object ReportingCasper {
                          .map(SystemDeployReportResult(term.systemDeploy, _))
                    }
 
-          checkPoint <- runtime.createCheckpoint
+          checkPoint <- runtime.createCheckpoint()
 
         } yield ReplayResult(res, sysRes, checkPoint.root.toByteString)
     }

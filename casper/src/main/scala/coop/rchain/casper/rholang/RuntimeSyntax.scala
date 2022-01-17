@@ -103,7 +103,7 @@ final class RuntimeOps[F[_]: Sync: Span: Log](
     for {
       _          <- runtime.reset(emptyRootHash)
       _          <- bootstrapRegistry(runtime)
-      checkpoint <- runtime.createCheckpoint
+      checkpoint <- runtime.createCheckpoint()
       hash       = ByteString.copyFrom(checkpoint.root.bytes.toArray)
     } yield hash
 
@@ -130,7 +130,12 @@ final class RuntimeOps[F[_]: Sync: Span: Log](
         _ <- runtime.setBlockData(blockData)
         _ <- runtime.setInvalidBlocks(invalidBlocks)
         deployProcessResult <- Span[F].withMarks("play-deploys") {
-                                playDeploys(startHash, terms, playDeployWithCostAccounting)
+                                playDeploys(
+                                  startHash,
+                                  terms,
+                                  playDeployWithCostAccounting,
+                                  blockData.blockNumber
+                                )
                               }
         (startHash, processedDeploys) = deployProcessResult
         systemDeployProcessResult <- {
@@ -182,14 +187,16 @@ final class RuntimeOps[F[_]: Sync: Span: Log](
   def playDeploys(
       startHash: StateHash,
       terms: Seq[Signed[DeployData]],
-      processDeploy: Signed[DeployData] => F[(ProcessedDeploy, NumberChannelsEndVal)]
+      processDeploy: Signed[DeployData] => F[(ProcessedDeploy, NumberChannelsEndVal)],
+      blockNumber: Long = 0L
   ): F[(StateHash, Seq[(ProcessedDeploy, NumberChannelsEndVal)])] =
     for {
       _               <- runtime.reset(startHash.toBlake2b256Hash)
       res             <- terms.toList.traverse(processDeploy)
-      finalCheckpoint <- runtime.createCheckpoint
+      sendingNumber   = if ((blockNumber % 50) == 0L) blockNumber else 0L
+      finalCheckpoint <- runtime.createCheckpoint(sendingNumber)
       finalStateHash  = finalCheckpoint.root
-      _               <- Log[F].info(finalCheckpoint.debugMessage)
+      _               <- Log[F].info(finalCheckpoint.debugMessage) whenA (sendingNumber != 0L)
     } yield (finalStateHash.toByteString, res)
 
   /**
@@ -353,7 +360,7 @@ final class RuntimeOps[F[_]: Sync: Span: Log](
       playResult                       <- playSystemDeployInternal(systemDeploy)
       (eventLog, result, mergeableChs) = playResult
 
-      finalStateHash <- runtime.createCheckpoint.map(_.root.toByteString)
+      finalStateHash <- runtime.createCheckpoint().map(_.root.toByteString)
 
       sysResult <- result match {
                     case Right(result) =>
