@@ -232,7 +232,7 @@ class RSpace[F[_]: Concurrent: ContextShift: Log: Metrics: Span, C, P, A, K](
 
         h = historyRepositoryAtom.get()
         debugMessage <- if (blockNumber != 0L) for {
-                         historyNumAndSize <- h.numRecordsAndSizeBytesHistory
+                         historyNumAndSize <- (0, 0L).pure
                          stroreNum         = h.numRecordsStore()
                          stroreSize        = h.sizeBytesStore()
                          r = "[blockNumber, storeNumNodes, storeSizeBytes, historyNumNodes, historySizeBytes],  " + blockNumber.toString +

@@ -3,6 +3,8 @@ package coop.rchain.rspace.history
 import cats.effect.Sync
 import cats.syntax.all._
 import cats.{Monad, Parallel}
+import coop.rchain.shared.Compression
+import net.jpountz.lz4.{LZ4CompressorWithLength, LZ4DecompressorWithLength}
 import scodec.bits.ByteVector
 
 import scala.annotation.tailrec
@@ -440,16 +442,31 @@ object RadixTree {
 
   class RadixTreeImpl[F[_]: Sync: Parallel](store: RadixStore[F]) {
 
+    // Compression
+
+    private val compressor = new LZ4CompressorWithLength(Compression.factory.fastCompressor())
+    // val compressor = new LZ4CompressorWithLength(factory.highCompressor(17)) // Max compression
+    private val decompressor = new LZ4DecompressorWithLength(Compression.factory.fastDecompressor())
+
+    def compressBytes(bytes: ByteVector): ByteVector =
+      ByteVector(compressor.compress(bytes.toArray))
+
+    def decompressBytes(bytes: ByteVector): F[ByteVector] =
+      Sync[F].delay(ByteVector(decompressor.decompress(bytes.toArray))).handleErrorWith { ex =>
+        new Exception("Decompress of block failed.", ex).raiseError
+      }
+
     /**
       * Load and decode serializing data from KVDB.
       */
     private def loadNodeFromStore(nodePtr: ByteVector): F[Option[Node]] =
       for {
         nodeOpt <- store.get(Seq(nodePtr))
-        r = nodeOpt.head match {
-          case None       => None
-          case Some(node) => Some(codecs.decode(node))
-        }
+        r <- nodeOpt.head match {
+              case None => None.pure
+              case Some(nodeCompress) =>
+                decompressBytes(nodeCompress).map(node => Some(codecs.decode(node)))
+            }
       } yield r
 
     /**
@@ -513,7 +530,7 @@ object RadixTree {
           )
         case None => cacheR.update(hash, node)
       }
-      cacheW.update(hash, bytes)
+      cacheW.update(hash, compressBytes(bytes))
       hash
     }
 
