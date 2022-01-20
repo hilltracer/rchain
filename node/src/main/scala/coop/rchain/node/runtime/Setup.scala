@@ -2,7 +2,7 @@ package coop.rchain.node.runtime
 
 import cats.Parallel
 import cats.effect.concurrent.{Deferred, Ref}
-import cats.effect.{Concurrent, ContextShift, Timer}
+import cats.effect.{Concurrent, ContextShift, Sync, Timer}
 import cats.mtl.ApplicativeAsk
 import cats.syntax.all._
 import coop.rchain.blockstorage.KeyValueBlockStore
@@ -17,6 +17,8 @@ import coop.rchain.casper.blocks.proposer.{Proposer, ProposerResult}
 import coop.rchain.casper.engine.{BlockRetriever, CasperLaunch, EngineCell, Running}
 import coop.rchain.casper.protocol.BlockMessage
 import coop.rchain.casper.state.instances.{BlockStateManagerImpl, ProposerState}
+import coop.rchain.casper.storage.RNodeKeyValueStoreManager
+import coop.rchain.casper.storage.RNodeKeyValueStoreManager.legacyRSpacePathPrefix
 import coop.rchain.casper.util.comm.{CasperPacketHandler, CommUtil}
 import coop.rchain.casper.util.rholang.RuntimeManager
 import coop.rchain.comm.discovery.NodeDiscovery
@@ -42,9 +44,10 @@ import coop.rchain.rholang.interpreter.RhoRuntime
 import coop.rchain.rspace.state.instances.RSpaceStateManagerImpl
 import coop.rchain.rspace.syntax._
 import coop.rchain.shared._
-import coop.rchain.store.InMemoryStoreManager
 import fs2.concurrent.Queue
 import monix.execution.Scheduler
+
+import java.nio.file.Files
 
 object Setup {
   def setupNodeProgram[F[_]: Monixable: Concurrent: Parallel: ContextShift: Time: Timer: TransportLayer: LocalEnvironment: Log: EventLog: Metrics: NodeDiscovery](
@@ -85,10 +88,10 @@ object Setup {
       else Span.noop[F]
 
       // RNode key-value store manager / manages LMDB databases
-//      oldRSpacePath          = conf.storage.dataDir.resolve(s"$legacyRSpacePathPrefix/history/data.mdb")
-//      legacyRSpaceDirSupport <- Sync[F].delay(Files.exists(oldRSpacePath))
-//      rnodeStoreManager      <- RNodeKeyValueStoreManager(conf.storage.dataDir, legacyRSpaceDirSupport)
-      rnodeStoreManager = InMemoryStoreManager()
+      oldRSpacePath          = conf.storage.dataDir.resolve(s"$legacyRSpacePathPrefix/history/data.mdb")
+      legacyRSpaceDirSupport <- Sync[F].delay(Files.exists(oldRSpacePath))
+      rnodeStoreManager      <- RNodeKeyValueStoreManager(conf.storage.dataDir, legacyRSpaceDirSupport)
+//      rnodeStoreManager = InMemoryStoreManager()
 
       // TODO: Old BlockStore migration message, remove after couple of releases from v0.11.0.
       oldBlockStoreExists = conf.storage.dataDir.resolve("blockstore/storage").toFile.exists

@@ -51,9 +51,9 @@ class KeyValueBlockStoreSpec extends FlatSpec with Matchers with GeneratorDriven
     // Delete should not be used, block store can only add data.
     override def delete(keys: Seq[ByteBuffer]): F[Int] = ???
 
-    override def sizeBytes(): Long = ???
+    override def sizeBytes(): F[Long] = ???
 
-    override def numRecords(): Int = ???
+    override def numRecords(): F[Long] = ???
   }
 
   def notImplementedKV[F[_]]: KeyValueStore[F] = new KeyValueStore[F] {
@@ -62,9 +62,9 @@ class KeyValueBlockStoreSpec extends FlatSpec with Matchers with GeneratorDriven
     override def delete(keys: Seq[ByteBuffer]): F[Int]                                         = ???
     override def iterate[T](f: Iterator[(ByteBuffer, ByteBuffer)] => T): F[T]                  = ???
 
-    override def sizeBytes(): Long = ???
+    override def sizeBytes(): F[Long] = ???
 
-    override def numRecords(): Int = ???
+    override def numRecords(): F[Long] = ???
   }
 
   implicit val scheduler = monix.execution.Scheduler.global

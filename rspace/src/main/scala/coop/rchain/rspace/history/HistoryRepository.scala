@@ -48,9 +48,9 @@ trait HistoryRepository[F[_], C, P, A, K] {
 
   def root: Blake2b256Hash
 
-  def sizeBytesStore: () => Long
+  def sizeBytesStore: F[Long]
 
-  def numRecordsStore: () => Int
+  def numRecordsStore: F[Long]
 
   def numRecordsAndSizeBytesHistory: F[(Int, Long)]
 }

@@ -15,6 +15,7 @@ import coop.rchain.rspace.state.{RSpaceExporter, RSpaceImporter}
 import coop.rchain.shared.syntax._
 import coop.rchain.shared.{Log, Serialize}
 import fs2.Stream
+import monix.eval.Task
 import scodec.bits.ByteVector
 
 final case class HistoryRepositoryImpl[F[_]: Concurrent: Parallel: Log: Span, C, P, A, K](
@@ -27,8 +28,8 @@ final case class HistoryRepositoryImpl[F[_]: Concurrent: Parallel: Log: Span, C,
     serializeP: Serialize[P],
     serializeA: Serialize[A],
     serializeK: Serialize[K],
-    sizeBytesTemp: () => Long = () => 0,
-    numRecordsTemp: () => Int = () => 0
+    sizeBytesTemp: F[Long] = Task(0L),
+    numRecordsTemp: F[Long] = Task(0L)
 ) extends HistoryRepository[F, C, P, A, K] {
 
   implicit val ms = Metrics.Source(RSpaceMetricsSource, "history")
@@ -237,9 +238,9 @@ final case class HistoryRepositoryImpl[F[_]: Concurrent: Parallel: Log: Span, C,
         )
       )
 
-  override def sizeBytesStore: () => Long = sizeBytesTemp
+  override def sizeBytesStore: F[Long] = sizeBytesTemp
 
-  override def numRecordsStore: () => Int = numRecordsTemp
+  override def numRecordsStore: F[Long] = numRecordsTemp
 
   override def numRecordsAndSizeBytesHistory: F[(Int, Long)] =
     for {

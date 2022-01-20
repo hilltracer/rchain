@@ -11,7 +11,7 @@ trait KeyValueStore[F[_]] {
 
   def iterate[T](f: Iterator[(ByteBuffer, ByteBuffer)] => T): F[T]
 
-  def sizeBytes(): Long
+  def sizeBytes(): F[Long]
 
-  def numRecords(): Int
+  def numRecords(): F[Long]
 }

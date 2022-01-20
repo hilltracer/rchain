@@ -90,7 +90,15 @@ final case class LmdbKeyValueStore[F[_]: Sync](
       }
     }
 
-  override def sizeBytes(): Long = ???
+  override def sizeBytes(): F[Long] =
+    withTxnSingleThread(isWrite = false) { (txn, dbi) =>
+      val stat = dbi.stat(txn)
+      stat.pageSize * (stat.leafPages + stat.branchPages + stat.overflowPages)
+    }
 
-  override def numRecords(): Int = ???
+  override def numRecords(): F[Long] =
+    withTxnSingleThread(isWrite = false) { (txn, dbi) =>
+      val stat = dbi.stat(txn)
+      stat.entries
+    }
 }

@@ -146,8 +146,8 @@ class HistoryGenKeySpec extends FlatSpec with Matchers {
           for { history <- MergingHistory(root, CachingHistoryStore(store)).pure } yield HistoryWithFunc(
             history,
             _ => Sync[F].pure(None),
-            inMemoStore.sizeBytes,
-            inMemoStore.numRecords
+            () => 0L, //fixme
+            () => 0   //fixme
           )
         case "lmdb" =>
           for {
@@ -172,8 +172,8 @@ class HistoryGenKeySpec extends FlatSpec with Matchers {
           for { history <- RadixHistory[F](root, radixStore) } yield HistoryWithFunc(
             history,
             radixStore.get1,
-            inMemoStore.sizeBytes,
-            inMemoStore.numRecords
+            () => 0L, //fixme
+            () => 0   //fixme
           )
         case "lmdb" =>
           for {

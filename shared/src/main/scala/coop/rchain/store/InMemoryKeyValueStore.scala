@@ -35,10 +35,10 @@ final case class InMemoryKeyValueStore[F[_]: Sync]() extends KeyValueStore[F] {
 
   def clear(): Unit = state.clear()
 
-  def numRecords(): Int = state.size
+  def numRecords(): F[Long] = Sync[F].delay(state.size.toLong)
 
-  def sizeBytes(): Long =
-    state.toArray.map { el =>
+  def sizeBytes(): F[Long] =
+    Sync[F].delay(state.toArray.map { el =>
       el._1.capacity() + el._2.size
-    }.sum
+    }.sum)
 }
