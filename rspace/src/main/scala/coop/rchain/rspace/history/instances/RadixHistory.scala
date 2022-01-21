@@ -74,4 +74,11 @@ final case class RadixHistory[F[_]: Sync: Parallel](
 
   private def hasNoDuplicates(actions: List[HistoryAction]) =
     actions.map(_.key).toSet.size == actions.size
+
+  def printTree(): F[Unit] =
+    for {
+      node <- impl.loadNode(root.bytes, noAssert = true)
+      _    = impl.print(node)
+    } yield ()
+
 }
