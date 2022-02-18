@@ -28,7 +28,8 @@ class HistoryGenKeySpec extends FlatSpec with Matchers with BeforeAndAfterAll {
   object Settings {
 //    val typeHistory: String = "MergingHistory"
 //    val typeHistory: String = "RadixHistory"
-    val typeHistory: String = "DefaultHistory"
+    val typeHistory: String = "CachedRadixHistory"
+//    val typeHistory: String = "DefaultHistory"
 
     val typeStore: String = "lmdb"
 //    val typeStore: String = "inMemo"
@@ -150,6 +151,29 @@ class HistoryGenKeySpec extends FlatSpec with Matchers with BeforeAndAfterAll {
       }
   }
 
+  case class createCachedRadixHistory[F[_]: Concurrent: ContextShift: Parallel: Log: Metrics: Span]()
+    extends CreateHistory[F] {
+    def create(root: Blake2b256Hash): F[HistoryType[F]] =
+      Settings.typeStore match {
+        case "inMemo" =>
+          val inMemoStore = InMemoryKeyValueStore[F]
+          inMemoStore.clear()
+          val radixStore = RadixHistoryWithExternReadCache.createStore(inMemoStore)
+          for { history <- RadixHistoryWithExternReadCache[F](root, radixStore) } yield HistoryWithFunc(
+            history,
+            radixStore.get1,
+            inMemoStore.sizeBytes,
+            inMemoStore.numRecords
+          )
+        case "lmdb" =>
+          for {
+            store      <- storeLMDB()
+            radixStore = RadixHistoryWithExternReadCache.createStore(store)
+            history    <- RadixHistoryWithExternReadCache[F](root, radixStore)
+          } yield HistoryWithoutFunc(history, radixStore.get1)
+      }
+  }
+
   case class createDefaultHistory[F[_]: Concurrent: ContextShift: Parallel: Log: Metrics: Span]()
       extends CreateHistory[F] {
     def create(root: Blake2b256Hash): F[HistoryType[F]] =
@@ -182,6 +206,7 @@ class HistoryGenKeySpec extends FlatSpec with Matchers with BeforeAndAfterAll {
       Settings.typeHistory match {
         case "MergingHistory" => createMergingHistory[F].create(root)
         case "RadixHistory"   => createRadixHistory[F].create(root)
+        case "CachedRadixHistory"   => createCachedRadixHistory[F].create(root)
         case "DefaultHistory" => createDefaultHistory[F].create(root)
       }
 
@@ -235,7 +260,7 @@ class HistoryGenKeySpec extends FlatSpec with Matchers with BeforeAndAfterAll {
           getNodeDataFromStore: ByteVector => F[Option[ByteVector]]
       ): F[ExportData] = {
         import coop.rchain.rspace.history.RadixTree._
-        if (Settings.typeHistory == "RadixHistory") {
+        if (Settings.typeHistory == "RadixHistory" || Settings.typeHistory == "CachedRadixHistory") {
           val exportSettings = ExportDataSettings(
             flagNPrefixes = false,
             flagNKeys = true,
