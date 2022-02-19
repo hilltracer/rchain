@@ -4,7 +4,7 @@ import cats.Parallel
 import cats.effect.Sync
 import cats.syntax.all._
 import coop.rchain.rspace.hashing.Blake2b256Hash
-import coop.rchain.rspace.history.RadixTree._
+import coop.rchain.rspace.history.RadixTreeWithExternReadCache._
 import coop.rchain.rspace.history._
 import coop.rchain.shared.syntax.sharedSyntaxKeyValueStore
 import coop.rchain.store.{KeyValueStore, KeyValueTypedStore}
@@ -31,7 +31,7 @@ object RadixHistoryWithExternReadCache {
       store: KeyValueTypedStore[F, ByteVector, ByteVector]
   ): F[RadixHistoryWithExternReadCache[F]] =
     for {
-      impl <- Sync[F].delay(new RadixTreeImpl[F](store))
+      impl <- Sync[F].delay(new RadixTreeImpl[F](store, cache))
       node <- impl.loadNode(root.bytes, noAssert = true)
     } yield RadixHistoryWithExternReadCache(root, node, impl, store, cache)
 
@@ -54,7 +54,7 @@ final case class RadixHistoryWithExternReadCache[F[_]: Sync: Parallel](
 
   override def reset(root: Blake2b256Hash): F[History[F]] =
     for {
-      impl <- Sync[F].delay(new RadixTreeImpl[F](store))
+      impl <- Sync[F].delay(new RadixTreeImpl[F](store, cache))
       node <- impl.loadNode(root.bytes, noAssert = true)
     } yield this.copy(root, node, impl, store)
 

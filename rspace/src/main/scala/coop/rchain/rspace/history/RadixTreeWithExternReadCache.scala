@@ -10,7 +10,7 @@ import scodec.bits.ByteVector
 import scala.annotation.tailrec
 import scala.collection.concurrent.TrieMap
 
-object RadixTree {
+object RadixTreeWithExternReadCache {
 
   /**
     * Described items which contain in [[Node]].
