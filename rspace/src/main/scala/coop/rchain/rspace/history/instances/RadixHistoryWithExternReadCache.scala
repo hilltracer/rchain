@@ -22,7 +22,7 @@ object RadixHistoryWithExternReadCache {
    * Where hash  - Blake2b256Hash of serializing nodes data,
    *       node - deserialized data of this node.
    */
-  val maxCacheRecordCount = 1000000
+  private val maxCacheRecordCount = 1000000
   val cache: LimitTrieMapCache[ByteVector, Node] =
     new LimitTrieMapCache[ByteVector, Node](maxCacheRecordCount)
 
