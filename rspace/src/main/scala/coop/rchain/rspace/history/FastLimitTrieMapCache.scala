@@ -1,4 +1,5 @@
 package coop.rchain.rspace.history
+import scala.annotation.tailrec
 import scala.collection.concurrent.TrieMap
 
 /*
@@ -57,8 +58,30 @@ class FastLimitTrieMapCache[A, B](maxSize: Int, cache: TrieMap[A, (B, Option[A],
     if (topKey.isEmpty)
       new FastLimitTrieMapCache(maxSize, cache, Some(key), Some(key))
 
+    val nextBottomKey = clearOldItems()
     val (value, _, prevKey) = cache(topKey.get)
     cache(topKey.get) = (value, Some(key), prevKey)
-    new FastLimitTrieMapCache(maxSize, cache, Some(key), bottomKey)
+    new FastLimitTrieMapCache(maxSize, cache, Some(key), nextBottomKey)
+  }
+
+  @tailrec
+  private def prepareOldItems(oldItemsCount: Int, bottomKey: Option[A],
+                              currentOldItemsList: List[A]): (List[A], Option[A]) = {
+    if (bottomKey.isEmpty)
+      (currentOldItemsList, bottomKey)
+    else {
+      val nextBottomKey = cache(bottomKey.get)._2
+      prepareOldItems(oldItemsCount - 1, nextBottomKey, bottomKey.get::currentOldItemsList)
+    }
+  }
+
+  private def clearOldItems(): Option[A] = {
+    if (maxSize < cache.size) {
+      val (oldItems, nextBottomKey) = prepareOldItems(maxSize/3, bottomKey, Nil)
+      oldItems.foreach(_ => cache.remove(_))
+      nextBottomKey
+    }
+    else
+      bottomKey
   }
 }
