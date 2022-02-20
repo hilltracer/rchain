@@ -33,15 +33,15 @@ class FastLimitTrieMapCache[A, B](maxSize: Int, cache: TrieMap[A, (B, Option[A],
         if (bottomKey.get == key) {
           val (lastValue, nextKey, _) = cache(bottomKey.get)
           cache(bottomKey.get) = (lastValue, nextKey, None)
-          val (firstValue, _, prevKey) = cache(bottomKey.get)
-          cache(bottomKey.get) = (firstValue, Some(key), prevKey)
+          val (firstValue, _, prevKey) = cache(topKey.get)
+          cache(topKey.get) = (firstValue, Some(key), prevKey)
           (value, new FastLimitTrieMapCache(maxSize, cache, Some(key), cache(key)._2))
         }
         else {
           val (nextValue, nextKey, _) = cache(cache(key)._2.get)
           cache(cache(key)._2.get) = (nextValue, nextKey, cache(key)._3)
-          val (prevValue, _, prevKey) = cache(cache(key)._2.get)
-          cache(cache(key)._2.get) = (prevValue, cache(key)._2, prevKey)
+          val (prevValue, _, prevKey) = cache(cache(key)._3.get)
+          cache(cache(key)._3.get) = (prevValue, cache(key)._2, prevKey)
           (value, new FastLimitTrieMapCache(maxSize, cache, Some(key), bottomKey))
         }
       }
