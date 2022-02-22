@@ -16,8 +16,10 @@ object FastLimitTrieMapCache {
   * topKey    - last read item's key
   * bottomKey - most old item's key
   */
-class FastLimitTrieMapCache[A, B](maxSize: Int, cache: TrieMap[A, (B, Option[A], Option[A])] = TrieMap.empty,
-                              topKey: Option[A] = None, bottomKey: Option[A] = None) {
+class FastLimitTrieMapCache[A, B](
+  maxSize: Int,
+  cache: TrieMap[A, (B, Option[A], Option[A])] = TrieMap.empty[A, (B, Option[A], Option[A])],
+  topKey: Option[A] = None, bottomKey: Option[A] = None) {
   def get(key: A): (Option[B], FastLimitTrieMapCache[A, B]) = {
     val optionValue = cache.get(key)
 
@@ -83,7 +85,7 @@ class FastLimitTrieMapCache[A, B](maxSize: Int, cache: TrieMap[A, (B, Option[A],
   private def clearOldItems(): Option[A] = {
     if (maxSize < cache.size) {
       val (oldItems, nextBottomKey) = prepareOldItems(maxSize/3, bottomKey, Nil)
-      oldItems.foreach(_ => cache.remove(_))
+      oldItems.foreach(cache.remove)
       nextBottomKey
     }
     else

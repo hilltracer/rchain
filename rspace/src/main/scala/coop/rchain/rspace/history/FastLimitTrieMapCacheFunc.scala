@@ -15,8 +15,10 @@ import scala.collection.concurrent.TrieMap
   * topKey    - last read item's key
   * bottomKey - most old item's key
   */
-class FastLimitTrieMapCacheFunc[A, B](maxSize: Int, cache: TrieMap[A, (B, Option[A], Option[A])] = TrieMap.empty,
-                                      var topKey: Option[A] = None, var bottomKey: Option[A] = None) {
+class FastLimitTrieMapCacheFunc[A, B](
+  maxSize: Int,
+  cache: TrieMap[A, (B, Option[A], Option[A])] = TrieMap.empty[A, (B, Option[A], Option[A])],
+  var topKey: Option[A] = None, var bottomKey: Option[A] = None) {
   def get(key: A): Option[B] = {
     val optionValue = cache.get(key)
 
@@ -82,7 +84,7 @@ class FastLimitTrieMapCacheFunc[A, B](maxSize: Int, cache: TrieMap[A, (B, Option
   private def clearOldItems(): Option[A] = {
     if (maxSize < cache.size) {
       val (oldItems, nextBottomKey) = prepareOldItems(maxSize/3, bottomKey, Nil)
-      oldItems.foreach(_ => cache.remove(_))
+      oldItems.foreach(cache.remove)
       nextBottomKey
     }
     else
