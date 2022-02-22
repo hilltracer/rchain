@@ -15,7 +15,7 @@ import scala.collection.concurrent.TrieMap
   * topKey    - last read item's key
   * bottomKey - most old item's key
   */
-class FastLimitTrieMapCacheFunc[A, B](
+class FastLimitTrieMapCache[A, B](
   maxSize: Int,
   cache: TrieMap[A, (B, Option[A], Option[A])] = TrieMap.empty[A, (B, Option[A], Option[A])],
   var topKey: Option[A] = None, var bottomKey: Option[A] = None) {

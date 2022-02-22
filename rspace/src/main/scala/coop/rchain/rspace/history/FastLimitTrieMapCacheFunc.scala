@@ -7,8 +7,8 @@ import scala.collection.concurrent.TrieMap
   TODO: thread safety, increase speed
  */
 
-object FastLimitTrieMapCache {
-  def apply[A, B](maxSize: Int): FastLimitTrieMapCache[A, B] = new FastLimitTrieMapCache[A, B](maxSize)
+object FastLimitTrieMapCacheFunc {
+  def apply[A, B](maxSize: Int): FastLimitTrieMapCacheFunc[A, B] = new FastLimitTrieMapCacheFunc[A, B](maxSize)
 }
 /*
   * maxSize   - values count after which old records should be cleared
@@ -16,20 +16,20 @@ object FastLimitTrieMapCache {
   * topKey    - last read item's key
   * bottomKey - most old item's key
   */
-class FastLimitTrieMapCache[A, B](
+class FastLimitTrieMapCacheFunc[A, B](
   maxSize: Int,
   cache: TrieMap[A, (B, Option[A], Option[A])] = TrieMap.empty[A, (B, Option[A], Option[A])],
   topKey: Option[A] = None, bottomKey: Option[A] = None) {
-  def get(key: A): (Option[B], FastLimitTrieMapCache[A, B]) = {
+  def get(key: A): (Option[B], FastLimitTrieMapCacheFunc[A, B]) = {
     val optionValue = cache.get(key)
 
     if (optionValue.isEmpty)
-      (None, new FastLimitTrieMapCache(maxSize, cache, Some(key), bottomKey))
+      (None, new FastLimitTrieMapCacheFunc(maxSize, cache, Some(key), bottomKey))
     else {
       val value = Some(optionValue.get._1)
 
       if (topKey.get == key) {
-        (value, new FastLimitTrieMapCache(maxSize, cache, Some(key), bottomKey))
+        (value, new FastLimitTrieMapCacheFunc(maxSize, cache, Some(key), bottomKey))
       }
       else {
         if (bottomKey.get == key) {
@@ -37,20 +37,20 @@ class FastLimitTrieMapCache[A, B](
           cache(bottomKey.get) = (lastValue, nextKey, None)
           val (firstValue, _, prevKey) = cache(topKey.get)
           cache(topKey.get) = (firstValue, Some(key), prevKey)
-          (value, new FastLimitTrieMapCache(maxSize, cache, Some(key), cache(key)._2))
+          (value, new FastLimitTrieMapCacheFunc(maxSize, cache, Some(key), cache(key)._2))
         }
         else {
           val (nextValue, nextKey, _) = cache(cache(key)._2.get)
           cache(cache(key)._2.get) = (nextValue, nextKey, cache(key)._3)
           val (prevValue, _, prevKey) = cache(cache(key)._3.get)
           cache(cache(key)._3.get) = (prevValue, cache(key)._2, prevKey)
-          (value, new FastLimitTrieMapCache(maxSize, cache, Some(key), bottomKey))
+          (value, new FastLimitTrieMapCacheFunc(maxSize, cache, Some(key), bottomKey))
         }
       }
     }
   }
 
-  def update(key: A, value: B): FastLimitTrieMapCache[A, B] = {
+  def update(key: A, value: B): FastLimitTrieMapCacheFunc[A, B] = {
     val optionValue = cache.get(key)
 
     if (optionValue.isDefined) {
@@ -61,12 +61,12 @@ class FastLimitTrieMapCache[A, B](
     else {
       cache(key) = (value, None, topKey)
       if (topKey.isEmpty)
-        new FastLimitTrieMapCache(maxSize, cache, Some(key), Some(key))
+        new FastLimitTrieMapCacheFunc(maxSize, cache, Some(key), Some(key))
       else {
         val nextBottomKey = clearOldItems()
         val (value, _, prevKey) = cache(topKey.get)
         cache(topKey.get) = (value, Some(key), prevKey)
-        new FastLimitTrieMapCache(maxSize, cache, Some(key), nextBottomKey)
+        new FastLimitTrieMapCacheFunc(maxSize, cache, Some(key), nextBottomKey)
       }
     }
   }
