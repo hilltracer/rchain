@@ -157,7 +157,7 @@ object RadixTree {
 
     /** Deserialization [[ByteVector]] to [[Node]]
       */
-    def decode(bv: ByteVector): Node = {
+    def decode[F[_]: Sync](bv: ByteVector): F[Node] = Sync[F].defer {
       val arr     = bv.toArray
       val maxSize = arr.length
 
@@ -169,46 +169,46 @@ object RadixTree {
       def decodeItem(pos0: Int, node: Node): Node =
         if (pos0 == maxSize) node // End of deserialization
         else {
-          val (idx0Next, nodeNext) = try {
-            val numItem: Int = byteToInt(arr(pos0)) // Take first byte - it's item's number
-            assert(
-              node(numItem) == EmptyItem,
-              "Error during deserialization: wrong number of item."
-            )
-            val pos1       = pos0 + 1
-            val secondByte = arr(pos1) // Take second byte
+          val numItem: Int = byteToInt(arr(pos0)) // Take first byte - it's item's number
+          assert(
+            node(numItem) == EmptyItem,
+            "Error during deserialization: wrong number of item."
+          )
 
-            // Decoding prefix
-            val prefixSize: Int = secondByte & 0x7F // Lower 7 bits - it's size of prefix (0..127).
-            val prefix          = new Array[Byte](prefixSize)
-            val posPrefixStart  = pos1 + 1
-            for (i <- 0 until prefixSize) prefix(i) = arr(posPrefixStart + i) // Take prefix
+          val pos1       = pos0 + 1
+          val secondByte = arr(pos1) // Take second byte
 
-            // Decoding leaf or nodePtr data
-            val valOrPtr         = new Array[Byte](defSize)
-            val posValOrPtrStart = posPrefixStart + prefixSize
-            for (i <- 0 until defSize)
-              valOrPtr(i) = arr(posValOrPtrStart + i) // Take next 32 bytes - it's data
+          // Decoding prefix
+          val prefixSize: Int = secondByte & 0x7F // Lower 7 bits - it's size of prefix (0..127).
+          val prefix          = new Array[Byte](prefixSize)
+          val posPrefixStart  = pos1 + 1
+          for (i <- 0 until prefixSize) prefix(i) = arr(posPrefixStart + i) // Take prefix
 
-            val pos0Next = posValOrPtrStart + defSize // Calculating start position for next loop
+          // Decoding leaf or nodePtr data
+          val valOrPtr         = new Array[Byte](defSize)
+          val posValOrPtrStart = posPrefixStart + prefixSize
+          for (i <- 0 until defSize)
+            valOrPtr(i) = arr(posValOrPtrStart + i) // Take next 32 bytes - it's data
 
-            // Decoding type of non-empty item
-            val item = if (isLeaf(secondByte)) {
-              Leaf(ByteVector(prefix), ByteVector(valOrPtr))
-            } else {
-              NodePtr(ByteVector(prefix), ByteVector(valOrPtr))
-            }
+          val pos0Next = posValOrPtrStart + defSize // Calculating start position for next loop
 
-            (pos0Next, node.updated(numItem, item))
-          } catch {
-            case _: Exception =>
-              assert(assertion = false, "Error during deserialization: invalid data format")
-              (maxSize, emptyNode)
+          // Decoding type of non-empty item
+          val item = if (isLeaf(secondByte)) {
+            Leaf(ByteVector(prefix), ByteVector(valOrPtr))
+          } else {
+            NodePtr(ByteVector(prefix), ByteVector(valOrPtr))
           }
-          decodeItem(idx0Next, nodeNext) // Try to decode next item.
+          val nodeNext = node.updated(numItem, item)
+          decodeItem(pos0Next, nodeNext) // Try to decode next item.
         }
 
-      decodeItem(0, emptyNode)
+      def invalidDataException: F[Unit] =
+        new RuntimeException(s"Error during deserialization: invalid data format").raiseError
+
+      for {
+        r <- Sync[F].delay(decodeItem(0, emptyNode)).attempt
+        _ <- invalidDataException.whenA(r.isLeft)
+      } yield r.right.get
     }
   }
 
@@ -347,7 +347,7 @@ object RadixTree {
         node <- nodeOpt.liftTo[F](
                  new Exception(s"Export error: node with key ${p.hash.toHex} not found.")
                )
-        decodedNode = Codecs.decode(node)
+        decodedNode <- Codecs.decode(node)
       } yield
         if (p.restPrefix.isEmpty)
           (NodeData(p.nodePrefix, decodedNode, none) +: p.path).asRight // Happy end
@@ -377,7 +377,7 @@ object RadixTree {
         }
       }
 
-    final case class stepData(
+    final case class StepData(
         path: Path,         // Path of node from current to root
         skip: Int,          // Skip counter
         take: Int,          // Take counter
@@ -385,15 +385,15 @@ object RadixTree {
     )
 
     def addLeaf(
-        p: stepData,
+        p: StepData,
         leafPrefix: ByteVector,
         leafValue: ByteVector,
         itemIndex: Byte,
         curNodePrefix: ByteVector,
         newPath: Vector[NodeData]
-    ): stepData =
+    ): StepData =
       if (p.skip > 0)
-        stepData(newPath, p.skip, p.take, p.expData)
+        StepData(newPath, p.skip, p.take, p.expData)
       else {
         val newLP = if (settings.flagLeafPrefixes) {
           val newSingleLP = (curNodePrefix :+ itemIndex) ++ leafPrefix
@@ -409,17 +409,17 @@ object RadixTree {
           leafPrefixes = newLP,
           leafValues = newLV
         )
-        stepData(newPath, p.skip, p.take, newExportData)
+        StepData(newPath, p.skip, p.take, newExportData)
       }
 
     def addNodePtr(
-        p: stepData,
+        p: StepData,
         ptrPrefix: ByteVector,
         ptr: ByteVector,
         itemIndex: Byte,
         curNodePrefix: ByteVector,
         newPath: Vector[NodeData]
-    ): F[stepData] = {
+    ): F[StepData] = {
       def constructNodePtrData(
           childPath: Vector[NodeData],
           childNP: ByteVector,
@@ -440,7 +440,7 @@ object RadixTree {
           leafPrefixes = p.expData.leafPrefixes,
           leafValues = p.expData.leafValues
         )
-        stepData(childPath, p.skip, p.take - 1, newData)
+        StepData(childPath, p.skip, p.take - 1, newData)
       }
       for {
         childNodeOpt <- getNodeDataFromStore(ptr)
@@ -449,26 +449,26 @@ object RadixTree {
                       s"Export error: Node with key ${ptr.toHex} not found"
                     )
                   )
-        childDecoded  = Codecs.decode(childNV)
+        childDecoded  <- Codecs.decode(childNV)
         childNP       = (curNodePrefix :+ itemIndex) ++ ptrPrefix
         childNodeData = NodeData(childNP, childDecoded, none)
         childPath     = childNodeData +: newPath
       } yield
-        if (p.skip > 0) stepData(childPath, p.skip - 1, p.take, p.expData)
+        if (p.skip > 0) StepData(childPath, p.skip - 1, p.take, p.expData)
         else constructNodePtrData(childPath, childNP, childNV)
     }
     def addElement(
-        p: stepData,
+        p: StepData,
         itemIndex: Byte,
         item: Item,
         curNode: Node,
         curNodePrefix: ByteVector
-    ): F[stepData] = Sync[F].defer {
+    ): F[StepData] = Sync[F].defer {
       val newCurNodeData = NodeData(curNodePrefix, curNode, itemIndex.some)
       val newPath        = newCurNodeData +: p.path.tail
       item match {
         case EmptyItem =>
-          stepData(newPath, p.skip, p.take, p.expData).pure
+          StepData(newPath, p.skip, p.take, p.expData).pure
         case Leaf(leafPrefix, leafValue) =>
           addLeaf(p, leafPrefix, leafValue, itemIndex, curNodePrefix, newPath).pure
         case NodePtr(ptrPrefix, ptr) =>
@@ -479,17 +479,17 @@ object RadixTree {
     /**
       * Export one element (Node or Leaf) and recursively move to the next step.
       */
-    def exportStep(p: stepData): F[Either[stepData, (ExportData, Option[ByteVector])]] =
+    def exportStep(p: StepData): F[Either[StepData, (ExportData, Option[ByteVector])]] =
       Sync[F].defer {
         if (p.path.isEmpty) // End of Tree
-          (p.expData, Option.empty[ByteVector]).asRight[stepData].pure
+          (p.expData, Option.empty[ByteVector]).asRight[StepData].pure
         else {
           val curNodeData   = p.path.head
           val curNodePrefix = curNodeData.prefix
           val curNode       = curNodeData.decoded
 
           if ((p.skip, p.take) == (0, 0))
-            (p.expData, curNodePrefix.some).asRight[stepData].pure // End of skip&take counter
+            (p.expData, curNodePrefix.some).asRight[StepData].pure // End of skip&take counter
           else {
             val nextNotEmptyItemOpt = findNextNonEmptyItem(curNode, curNodeData.lastItemIndex)
             val newStepDataF = nextNotEmptyItemOpt
@@ -497,7 +497,7 @@ object RadixTree {
                 case (itemIndex, item) =>
                   addElement(p, itemIndex, item, curNode, curNodePrefix)
               }
-              .getOrElse(stepData(p.path.tail, p.skip, p.take, p.expData).pure)
+              .getOrElse(StepData(p.path.tail, p.skip, p.take, p.expData).pure)
             newStepDataF.map(_.asLeft)
           }
         }
@@ -536,7 +536,7 @@ object RadixTree {
             else rootStart
           }
         path                  <- rootParams.tailRecM(initNodePath)
-        startParams: stepData = stepData(path, initSkipSize, initTakeSize, initExportData)
+        startParams: StepData = StepData(path, initSkipSize, initTakeSize, initExportData)
         r                     <- startParams.tailRecM(exportStep)
       } yield r
 
@@ -556,7 +556,10 @@ object RadixTree {
       * Load and decode serializing data from KVDB.
       */
     private def loadNodeFromStore(nodePtr: ByteVector): F[Option[Node]] =
-      store.get1(nodePtr).map(_.map(Codecs.decode))
+      for {
+        nodeOpt <- store.get1(nodePtr)
+        r       <- nodeOpt.traverse(Codecs.decode(_))
+      } yield r
 
     /**
       * Cache for storing read and decoded nodes.
