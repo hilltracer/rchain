@@ -37,7 +37,7 @@ object LfsTupleSpaceRequester {
 
   // TODO: extract this as a parameter
   // 20,000 records uses about 2G of direct buffer memory on importing side
-  val pageSize = 20000
+  val pageSize = 4000
 
   /**
     * State to control processing of requests
