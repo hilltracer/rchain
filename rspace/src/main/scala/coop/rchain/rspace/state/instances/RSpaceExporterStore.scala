@@ -58,6 +58,7 @@ object RSpaceExporterStore {
       val sourceTrieStore = RadixHistory.createStore(sourceHistoryStore)
       for {
         nodes <- traverseHistory(startPath, skip, take, sourceTrieStore.get1)
+        _     = Runtime.getRuntime.gc()
       } yield nodes
     }
 

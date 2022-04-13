@@ -118,6 +118,7 @@ object RSpaceImporter {
 
       // Validate data (leaf) items hashes. It's the last check because it's the heaviest.
       _ <- validateDataItemsHashes.compile.drain
+      _ = Runtime.getRuntime.gc()
     } yield ()
   }
 }
