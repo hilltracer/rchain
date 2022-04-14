@@ -42,4 +42,21 @@ object ordering {
     }
   }
 
+  implicit class Map2SortOps(ps: List[(Par, Par)]) {
+    implicit val sync = implicitly[Sync[Coeval]]
+
+    def sortKeyValuePair(key: Par, value: Par): Coeval[ScoredTerm[(Par, Par)]] =
+      for {
+        sortedKey   <- Sortable.sortMatch(key)
+        sortedValue <- Sortable.sortMatch(value)
+      } yield ScoredTerm((sortedKey.term, sortedValue.term), sortedKey.score)
+
+    def sort: List[(Par, Par)] = {
+      val pairsSorted = ps.map(kv => sortKeyValuePair(kv._1, kv._2))
+      val coeval: Coeval[List[(Par, Par)]] = for {
+        sequenced <- pairsSorted.sequence
+      } yield sequenced.sorted.map(_.term)
+      coeval.value
+    }
+  }
 }
