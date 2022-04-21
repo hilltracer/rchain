@@ -42,6 +42,22 @@ object ordering {
     }
   }
 
+  implicit class MapSortOpsFast(ps: List[(Par, (Tree[ScoreAtom], Par))]) {
+    implicit val sync = implicitly[Sync[Coeval]]
+
+    // TODO: It's needed to use Coeval in this case?
+    def sort: List[ScoredTerm[(Par, Par)]] = {
+      val pairsSorted: List[Coeval[ScoredTerm[(Par, Par)]]] = ps.map {
+        case (keyTerm, (keyScore, valueTerm)) =>
+          Coeval.now { ScoredTerm((keyTerm, valueTerm), keyScore) }
+      }
+      val coeval: Coeval[List[ScoredTerm[(Par, Par)]]] = for {
+        sequenced <- pairsSorted.sequence
+      } yield sequenced.sorted
+      coeval.value
+    }
+  }
+
   implicit class Map2SortOps(ps: List[(Par, Par)]) {
     implicit val sync = implicitly[Sync[Coeval]]
 
