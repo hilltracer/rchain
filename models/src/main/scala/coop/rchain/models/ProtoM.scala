@@ -19,8 +19,8 @@ object ProtoM {
       size  <- message.serializedSizeM.get
       array = new Array[Byte](size)
       out   = CodedOutputStream.newInstance(array)
-      _     <- ProtoM.writeTo(out, message)
-      _     <- Sync[Coeval].catchNonFatal { out.checkNoSpaceLeft() }
+//      _     <- ProtoM.writeTo(out, message)
+//      _     <- Sync[Coeval].catchNonFatal { out.checkNoSpaceLeft() }
     } yield array
 
   def writeTo(
