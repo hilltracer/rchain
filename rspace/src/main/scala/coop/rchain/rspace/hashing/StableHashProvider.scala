@@ -70,9 +70,10 @@ object StableHashProvider {
     //        (ignore(7) ~> bool).encode(persist).map(_.bytes).getUnsafe
     //      )
     //    )
+    val _ = serializeA
     val encodedSeq = Seq(
       channel,
-      serializeA.encode(datum),
+      ByteVector.empty,
       bool(8).encode(persist).map(_.bytes).getUnsafe
     )
 //    Blake2b256Hash.create(encodedSeq)
