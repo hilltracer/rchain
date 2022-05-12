@@ -177,7 +177,8 @@ object ProtoM {
   private def singleFieldSize(value: Any, field: Descriptors.FieldDescriptor): Coeval[Int] =
     if (field.getLiteType == FieldType.MESSAGE) {
       for {
-        valueSize     <- value.asInstanceOf[StacksafeMessage[_]].serializedSizeM.get
+//        valueSize <- value.asInstanceOf[StacksafeMessage[_]].serializedSizeM.get
+        valueSize     <- 0.pure[Coeval]
         valueSizeSize = CodedOutputStream.computeUInt32SizeNoTag(valueSize)
         tagSize       = CodedOutputStream.computeTagSize(field.getNumber)
       } yield tagSize + valueSizeSize + valueSize
