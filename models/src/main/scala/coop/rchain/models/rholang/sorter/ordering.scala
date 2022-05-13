@@ -53,7 +53,7 @@ object ordering {
       }
       val coeval: Coeval[List[ScoredTerm[(Par, Par)]]] = for {
         sequenced <- pairsSorted.sequence
-      } yield sequenced.sorted
+      } yield sequenced
       coeval.value
     }
   }
