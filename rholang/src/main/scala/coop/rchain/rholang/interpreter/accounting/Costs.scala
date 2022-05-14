@@ -44,7 +44,7 @@ trait Costs {
 
   def equalityCheckCost[T <: StacksafeMessage[_], P <: StacksafeMessage[_]](x: T, y: P): Cost =
     Cost(
-      scala.math.min(ProtoM.serializedSize(x).value, ProtoM.serializedSize(y).value),
+      scala.math.min(0L, 0L),
       "equality check"
     )
 
@@ -92,7 +92,7 @@ trait Costs {
   // + allocates byte array of the same size as `serializedSize`
   // + then it copies all elements of the Par
   def toByteArrayCost[T <: StacksafeMessage[_]](a: T): Cost =
-    Cost(ProtoM.serializedSize(a).value, "to byte array")
+    Cost(0L, "to byte array")
   //TODO: adjust the cost of size method
   def sizeMethodCost(size: Int): Cost = Cost(size, "size")
   // slice(from, to) needs to drop `from` elements and then append `to - from` elements
@@ -141,7 +141,7 @@ trait Costs {
     storageCost(channel) + storageCost(data.pars: _*)
 
   private def storageCost[A <: StacksafeMessage[_]](as: A*): Cost =
-    Cost(as.map(a => ProtoM.serializedSize(a).value).sum, "storage cost")
+    Cost(as.map(a => 0L).sum, "storage cost")
 
   def commEventStorageCost(channelsInvolved: Int): Cost = {
     val consumeCost  = eventStorageCost(channelsInvolved)
