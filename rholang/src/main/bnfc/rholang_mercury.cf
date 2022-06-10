@@ -167,6 +167,7 @@ BoolFalse.  BoolLiteral ::= "false" ;
 -- Ground types:
 -- The "Literal" suffix avoids collisions with Simple Types
 GroundBool.    Ground ::= BoolLiteral ;
+GroundBigInt.  Ground ::= "BigInt" "(" LongLiteral ")" ;
 GroundInt.     Ground ::= LongLiteral ;
 GroundString.  Ground ::= StringLiteral ;
 GroundUri.     Ground ::= UriLiteral ;
@@ -196,6 +197,7 @@ VarRefKindName. VarRefKind ::= "=" "*" ;
 -- Simple Types:
 SimpleTypeBool. SimpleType ::= "Bool" ;
 SimpleTypeInt. SimpleType ::= "Int" ;
+SimpleTypeBigInt. SimpleType ::= "BigInt" ;
 SimpleTypeString. SimpleType ::= "String" ;
 SimpleTypeUri. SimpleType ::= "Uri" ;
 SimpleTypeByteArray. SimpleType ::= "ByteArray" ;
