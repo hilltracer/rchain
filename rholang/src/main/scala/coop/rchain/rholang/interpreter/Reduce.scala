@@ -770,11 +770,8 @@ class DebruijnInterpreter[M[_]: Sync: Parallel: _cost](
             exprVal <- evalSingleExpr(p)
           } yield exprVal
 
-        case EListBody(el) =>
-          for {
-            evaledPs  <- el.ps.toList.traverse(evalExpr)
-            updatedPs = evaledPs.map(updateLocallyFree)
-          } yield updateLocallyFree(EList(updatedPs, el.locallyFree, el.connectiveUsed))
+        case EListBody(_) =>
+          expr.pure
 
         case ETupleBody(el) =>
           for {
@@ -1533,8 +1530,8 @@ class DebruijnInterpreter[M[_]: Sync: Parallel: _cost](
         par.bundles.foldLeft(BitSet())((acc, bundleProc) => acc | bundleProc.locallyFree)
     )
 
-  private def updateLocallyFree(elist: EList): EList =
-    elist.copy(locallyFree = elist.ps.foldLeft(BitSet())((acc, p) => acc | p.locallyFree))
+//  private def updateLocallyFree(elist: EList): EList =
+//    elist.copy(locallyFree = elist.ps.foldLeft(BitSet())((acc, p) => acc | p.locallyFree))
 
   private def updateLocallyFree(elist: ETuple): ETuple =
     elist.copy(locallyFree = elist.ps.foldLeft(BitSet())((acc, p) => acc | p.locallyFree))

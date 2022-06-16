@@ -310,11 +310,8 @@ object Substitute {
           case EMatchesBody(EMatches(target, pattern)) =>
             s2(target, pattern)(EMatches(_, _))
           case EListBody(EList(ps, locallyFree, connectiveUsed, rem)) =>
-            for {
-              pss            <- ps.toVector.traverse(s1)
-              newLocallyFree = locallyFree.until(env.shift)
-            } yield Expr(exprInstance = EListBody(EList(pss, newLocallyFree, connectiveUsed, rem)))
-
+            val newLocallyFree = locallyFree.until(env.shift)
+            Expr(exprInstance = EListBody(EList(ps, newLocallyFree, connectiveUsed, rem))).pure
           case ETupleBody(ETuple(ps, locallyFree, connectiveUsed)) =>
             for {
               pss            <- ps.toVector.traverse(s1)
