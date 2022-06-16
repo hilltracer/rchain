@@ -43,10 +43,7 @@ trait Costs {
   final val SUBTRACTION_COST: Cost = Cost(3, "subtraction")
 
   def equalityCheckCost[T <: StacksafeMessage[_], P <: StacksafeMessage[_]](x: T, y: P): Cost =
-    Cost(
-      scala.math.min(ProtoM.serializedSize(x).value, ProtoM.serializedSize(y).value),
-      "equality check"
-    )
+    Cost(0L)
 
   final val BOOLEAN_AND_COST = Cost(2, "boolean and")
   final val BOOLEAN_OR_COST  = Cost(2, "boolean or")
@@ -141,7 +138,7 @@ trait Costs {
     storageCost(channel) + storageCost(data.pars: _*)
 
   private def storageCost[A <: StacksafeMessage[_]](as: A*): Cost =
-    Cost(as.map(a => ProtoM.serializedSize(a).value).sum, "storage cost")
+    Cost(0L)
 
   def commEventStorageCost(channelsInvolved: Int): Cost = {
     val consumeCost  = eventStorageCost(channelsInvolved)
