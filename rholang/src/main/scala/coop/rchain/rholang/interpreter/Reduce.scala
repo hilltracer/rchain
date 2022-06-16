@@ -13,6 +13,7 @@ import coop.rchain.models.Var.VarInstance.{BoundVar, FreeVar, Wildcard}
 import coop.rchain.models._
 import coop.rchain.models.rholang.implicits._
 import coop.rchain.models.serialization.implicits._
+import coop.rchain.models.syntax._
 import coop.rchain.rholang.interpreter.RhoRuntime.RhoTuplespace
 import coop.rchain.rholang.interpreter.RholangAndScalaDispatcher.RhoDispatch
 import coop.rchain.rholang.interpreter.Substitute.{charge => _, _}
@@ -20,7 +21,6 @@ import coop.rchain.rholang.interpreter.accounting._
 import coop.rchain.rholang.interpreter.errors._
 import coop.rchain.rholang.interpreter.matcher.SpatialMatcher.spatialMatchResult
 import coop.rchain.rspace.util.unpackOptionWithPeek
-import coop.rchain.models.syntax._
 import coop.rchain.shared.{Base16, Serialize}
 import monix.eval.Coeval
 import scalapb.GeneratedMessage
@@ -105,6 +105,25 @@ class DebruijnInterpreter[M[_]: Sync: Parallel: _cost](
         persistent
       )
     }
+  }
+
+  val loopChan: Par                  = GString("loop")
+  var loopBody: Option[Par]          = None
+  var loopDataList: Option[Seq[Par]] = None
+
+  def loopProduce(dataList: Seq[Par], rand: Blake2b512Random): M[Unit] = {
+    loopDataList = Some(dataList)
+    loopBody.map(runLoopContinuation(dataList, _, rand)).getOrElse(().pure)
+  }
+
+  def loopConsume(body: Par, rand: Blake2b512Random): M[Unit] = {
+    loopBody = Some(body)
+    loopDataList.map(runLoopContinuation(_, body, rand)).getOrElse(().pure)
+  }
+
+  def runLoopContinuation(dataList: Seq[Par], body: Par, rand: Blake2b512Random): M[Unit] = {
+    val env = Env.makeEnv(dataList: _*)
+    eval(body)(env, rand)
   }
 
   private[this] def continue(res: Application, repeatOp: M[Unit], persistent: Boolean): M[Unit] =
@@ -271,43 +290,53 @@ class DebruijnInterpreter[M[_]: Sync: Parallel: _cost](
       implicit env: Env[Par],
       rand: Blake2b512Random
   ): M[Unit] =
-    for {
-      _        <- charge[M](SEND_EVAL_COST)
-      evalChan <- evalExpr(send.chan)
-      subChan  <- substituteAndCharge[Par, M](evalChan, depth = 0, env)
-      unbundled <- subChan.singleBundle() match {
-                    case Some(value) =>
-                      if (!value.writeFlag)
-                        ReduceError("Trying to send on non-writeable channel.").raiseError[M, Par]
-                      else value.body.pure[M]
-                    case None => subChan.pure[M]
-                  }
-      data      <- send.data.toList.traverse(evalExpr)
-      substData <- data.traverse(substituteAndCharge[Par, M](_, depth = 0, env))
-      _         <- produce(unbundled, ListParWithRandom(substData, rand), send.persistent)
-    } yield ()
+    if (send.chan == loopChan) {
+      for {
+        data      <- send.data.toList.traverse(evalExpr)
+        substData <- data.traverse(substituteNoSortAndCharge[Par, M](_, depth = 0, env))
+        _         <- loopProduce(substData, rand)
+      } yield ()
+    } else
+      for {
+        _        <- charge[M](SEND_EVAL_COST)
+        evalChan <- evalExpr(send.chan)
+        subChan  <- substituteAndCharge[Par, M](evalChan, depth = 0, env)
+        unbundled <- subChan.singleBundle() match {
+                      case Some(value) =>
+                        if (!value.writeFlag)
+                          ReduceError("Trying to send on non-writeable channel.").raiseError[M, Par]
+                        else value.body.pure[M]
+                      case None => subChan.pure[M]
+                    }
+        data      <- send.data.toList.traverse(evalExpr)
+        substData <- data.traverse(substituteAndCharge[Par, M](_, depth = 0, env))
+        _         <- produce(unbundled, ListParWithRandom(substData, rand), send.persistent)
+      } yield ()
 
   private def eval(receive: Receive)(
       implicit env: Env[Par],
       rand: Blake2b512Random
   ): M[Unit] =
-    for {
-      _ <- charge[M](RECEIVE_EVAL_COST)
-      binds <- receive.binds.toList.traverse { rb =>
-                for {
-                  q <- unbundleReceive(rb)
-                  substPatterns <- rb.patterns.toList
-                                    .traverse(substituteAndCharge[Par, M](_, depth = 1, env))
-                } yield (BindPattern(substPatterns, rb.remainder, rb.freeCount), q)
-              }
-      // TODO: Allow for the environment to be stored with the body in the Tuplespace
-      substBody <- substituteNoSortAndCharge[Par, M](
-                    receive.body,
-                    depth = 0,
-                    env.shift(receive.bindCount)
-                  )
-      _ <- consume(binds, ParWithRandom(substBody, rand), receive.persistent, receive.peek)
-    } yield ()
+    if (receive.binds.headOption.exists(x => x.source == loopChan))
+      loopConsume(receive.body, rand)
+    else
+      for {
+        _ <- charge[M](RECEIVE_EVAL_COST)
+        binds <- receive.binds.toList.traverse { rb =>
+                  for {
+                    q <- unbundleReceive(rb)
+                    substPatterns <- rb.patterns.toList
+                                      .traverse(substituteAndCharge[Par, M](_, depth = 1, env))
+                  } yield (BindPattern(substPatterns, rb.remainder, rb.freeCount), q)
+                }
+        // TODO: Allow for the environment to be stored with the body in the Tuplespace
+        substBody <- substituteNoSortAndCharge[Par, M](
+                      receive.body,
+                      depth = 0,
+                      env.shift(receive.bindCount)
+                    )
+        _ <- consume(binds, ParWithRandom(substBody, rand), receive.persistent, receive.peek)
+      } yield ()
 
   /**
     * Variable "evaluation" is an environment lookup, but
