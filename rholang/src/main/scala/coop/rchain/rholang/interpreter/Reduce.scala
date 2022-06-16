@@ -27,7 +27,9 @@ import monix.eval.Coeval
 import scalapb.GeneratedMessage
 
 import scala.collection.SortedSet
+import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.BitSet
+import scala.language.postfixOps
 import scala.util.Try
 
 /** Reduce is the interface for evaluating Rholang expressions.
@@ -106,6 +108,65 @@ class DebruijnInterpreter[M[_]: Sync: Parallel: _cost](
         persistent
       )
     }
+  }
+
+  // TODO: Add patterns in the future
+  case class lProduceData(data: Seq[Par], persistent: Boolean, rand: Blake2b512Random)
+  case class lConsumeData(
+      body: Par,
+      persistent: Boolean,
+      peek: Boolean,
+      rand: Blake2b512Random
+  )
+
+  val localProduceStore: TrieMap[Par, lProduceData] = TrieMap.empty
+  val localConsumeStore: TrieMap[Par, lConsumeData] = TrieMap.empty
+
+  val localId: Par = GString("local")
+  def localDetect(channel: Par): Boolean =
+    channel.exprs match {
+      case Seq(Expr(ETupleBody(ETuple(Seq(id, _), _, _)))) => if (id == localId) true else false
+      case _                                               => false
+    }
+
+  def localProduce(
+      channel: Par,
+      dataList: Seq[Par],
+      persistent: Boolean,
+      rand: Blake2b512Random
+  ): M[Unit] = {
+    localProduceStore.update(channel, lProduceData(dataList, persistent, rand))
+    if (localConsumeStore.contains(channel)) runLocalContinuation(channel)
+    else ().pure
+  }
+
+  def localConsume(
+      channel: Par,
+      body: Par,
+      persistent: Boolean,
+      peek: Boolean,
+      rand: Blake2b512Random
+  ): M[Unit] = {
+    localConsumeStore.update(channel, lConsumeData(body, persistent, peek, rand))
+    if (localProduceStore.contains(channel)) runLocalContinuation(channel)
+    else ().pure
+  }
+
+  def runLocalContinuation(channel: Par): M[Unit] = {
+    assert(
+      localProduceStore.contains(channel) || localConsumeStore.contains(channel),
+      "Data miss in local store"
+    )
+    val lProduceData(dataList, prodPersistent, _)              = localProduceStore(channel)
+    val lConsumeData(body, consPersistent, consPeek, consRand) = localConsumeStore(channel)
+    if (!prodPersistent || !consPeek) {
+      val _ = localProduceStore.remove(channel)
+    }
+    if (!consPersistent) {
+      val _ = localConsumeStore.remove(channel)
+    }
+    val env = Env.makeEnv(dataList: _*)
+    eval(body)(env, consRand)
   }
 
   private[this] def continue(res: Application, repeatOp: M[Unit], persistent: Boolean): M[Unit] =
@@ -279,43 +340,60 @@ class DebruijnInterpreter[M[_]: Sync: Parallel: _cost](
       implicit env: Env[Par],
       rand: Blake2b512Random
   ): M[Unit] =
-    for {
-      _        <- charge[M](SEND_EVAL_COST)
-      evalChan <- evalExpr(send.chan)
-      subChan  <- substituteAndCharge[Par, M](evalChan, depth = 0, env)
-      unbundled <- subChan.singleBundle() match {
-                    case Some(value) =>
-                      if (!value.writeFlag)
-                        ReduceError("Trying to send on non-writeable channel.").raiseError[M, Par]
-                      else value.body.pure[M]
-                    case None => subChan.pure[M]
-                  }
-      data      <- send.data.toList.traverse(evalExpr)
-      substData <- data.traverse(substituteAndCharge[Par, M](_, depth = 0, env))
-      _         <- produce(unbundled, ListParWithRandom(substData, rand), send.persistent)
-    } yield ()
+    if (localDetect(send.chan)) {
+      for {
+        _         <- charge[M](SEND_EVAL_COST)
+        evalChan  <- evalExpr(send.chan)
+        data      <- send.data.toList.traverse(evalExpr)
+        substData <- data.traverse(substituteNoSort[Par, M](_, depth = 0, env))
+        _         <- localProduce(evalChan, substData, send.persistent, rand)
+      } yield ()
+    } else
+      for {
+        _        <- charge[M](SEND_EVAL_COST)
+        evalChan <- evalExpr(send.chan)
+        subChan  <- substituteAndCharge[Par, M](evalChan, depth = 0, env)
+        unbundled <- subChan.singleBundle() match {
+                      case Some(value) =>
+                        if (!value.writeFlag)
+                          ReduceError("Trying to send on non-writeable channel.").raiseError[M, Par]
+                        else value.body.pure[M]
+                      case None => subChan.pure[M]
+                    }
+        data      <- send.data.toList.traverse(evalExpr)
+        substData <- data.traverse(substituteAndCharge[Par, M](_, depth = 0, env))
+        _         <- produce(unbundled, ListParWithRandom(substData, rand), send.persistent)
+      } yield ()
 
   private def eval(receive: Receive)(
       implicit env: Env[Par],
       rand: Blake2b512Random
   ): M[Unit] =
-    for {
-      _ <- charge[M](RECEIVE_EVAL_COST)
-      binds <- receive.binds.toList.traverse { rb =>
-                for {
-                  q <- unbundleReceive(rb)
-                  substPatterns <- rb.patterns.toList
-                                    .traverse(substituteAndCharge[Par, M](_, depth = 1, env))
-                } yield (BindPattern(substPatterns, rb.remainder, rb.freeCount), q)
-              }
-      // TODO: Allow for the environment to be stored with the body in the Tuplespace
-      substBody <- substituteNoSortAndCharge[Par, M](
-                    receive.body,
-                    depth = 0,
-                    env.shift(receive.bindCount)
-                  )
-      _ <- consume(binds, ParWithRandom(substBody, rand), receive.persistent, receive.peek)
-    } yield ()
+    if (receive.binds.size == 1 && receive.binds.headOption.exists(x => localDetect(x.source)))
+      for {
+        _         <- charge[M](SEND_EVAL_COST)
+        evalChan  <- evalExpr(receive.binds.head.source)
+        substBody <- substituteNoSort[Par, M](receive.body, depth = 0, env.shift(receive.bindCount))
+        _         <- localConsume(evalChan, substBody, receive.persistent, receive.peek, rand)
+      } yield ()
+    else
+      for {
+        _ <- charge[M](RECEIVE_EVAL_COST)
+        binds <- receive.binds.toList.traverse { rb =>
+                  for {
+                    q <- unbundleReceive(rb)
+                    substPatterns <- rb.patterns.toList
+                                      .traverse(substituteAndCharge[Par, M](_, depth = 1, env))
+                  } yield (BindPattern(substPatterns, rb.remainder, rb.freeCount), q)
+                }
+        // TODO: Allow for the environment to be stored with the body in the Tuplespace
+        substBody <- substituteNoSortAndCharge[Par, M](
+                      receive.body,
+                      depth = 0,
+                      env.shift(receive.bindCount)
+                    )
+        _ <- consume(binds, ParWithRandom(substBody, rand), receive.persistent, receive.peek)
+      } yield ()
 
   /**
     * Variable "evaluation" is an environment lookup, but

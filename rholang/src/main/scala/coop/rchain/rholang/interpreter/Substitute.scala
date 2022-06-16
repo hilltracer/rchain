@@ -47,6 +47,13 @@ object Substitute {
   ): M[A] =
     charge(Substitute[M, A].substituteNoSort(term)(depth, env), Cost(term))
 
+  def substituteNoSort[A: Chargeable, M[_]: _cost: _error: Substitute[*[_], A]: Sync](
+      term: A,
+      depth: Int,
+      env: Env[Par]
+  ): M[A] =
+    Substitute[M, A].substituteNoSort(term)(depth, env)
+
   def substitute2[M[_]: Monad, A, B, C](termA: A, termB: B)(
       f: (A, B) => C
   )(implicit evA: Substitute[M, A], evB: Substitute[M, B], depth: Int, env: Env[Par]): M[C] =
