@@ -79,6 +79,12 @@ object NodeLaunch {
 
     def startSyncingMode: F[Unit] =
       for {
+        dag <- BlockDagStorage[F].getRepresentation
+        _ <- new RuntimeException(
+              """DAG storage has already stored blocks.
+            | LFS syncing is not possible.
+            | Please remove old data files from RNode folder.""".stripMargin
+            ).raiseError.unlessA(dag.dagSet.isEmpty)
         validatorId <- ValidatorIdentity.fromPrivateKeyWithLogging[F](conf.validatorPrivateKey)
         finished    <- Deferred[F, Unit]
         engine <- NodeSyncing[F](
