@@ -126,6 +126,7 @@ final case class PrettyPrinter(
               else ""
             }
         } |+| buildRemainderString(remainder) |+| pure("}")
+      case EAMapBody(_) => ???
 
       case EVarBody(EVar(v)) => buildStringM(v)
       case GBool(b)          => pure(b.toString)

@@ -18,6 +18,7 @@ option (scalapb.options) = {
   import: "coop.rchain.models.ParSetTypeMapper.parSetESetTypeMapper"
   import: "coop.rchain.models.ParMapTypeMapper.parMapEMapTypeMapper"
   import: "coop.rchain.models.BigIntTypeMapper.bigIntBytesTypeMapper"
+  import: "coop.rchain.models.ParAMapTypeMapper.ParAMapEAMapTypeMapper"
   preserve_unknown_fields: false
 };
 
@@ -203,6 +204,7 @@ message Expr {
         ETuple e_tuple_body = 21;
         ESet e_set_body = 22 [(scalapb.field).type = "coop.rchain.models.ParSet"];
         EMap e_map_body = 23 [(scalapb.field).type = "coop.rchain.models.ParMap"];
+        EAMap e_a_map_body = 35 [(scalapb.field).type = "coop.rchain.models.ParAMap"];
         EMethod e_method_body = 24;
 
         EMatches e_matches_body = 27;
@@ -243,6 +245,19 @@ message EMap {
     bytes locallyFree = 3 [(scalapb.field).type = "coop.rchain.models.AlwaysEqual[scala.collection.immutable.BitSet]"];
     bool connective_used = 4;
     Var remainder = 5;
+}
+
+message EAMap {
+    repeated AMapItem item = 1;
+}
+
+/**
+ * One element of `Map[K, Either[AMap[K, V], V]]`
+ */
+message AMapItem {
+    string key = 1;
+    EAMap subAMap = 2 [(scalapb.field).no_box = true];
+    Par value = 3 [(scalapb.field).no_box = true];
 }
 
 /**

@@ -52,6 +52,10 @@ object implicits {
     new Expr(exprInstance = EMapBody(e))
   implicit def fromEMap(e: ParMap): Expr = apply(e)
 
+  def apply(e: ParAMap): Expr =
+    new Expr(exprInstance = EAMapBody(e))
+  implicit def fromEAMap(e: ParAMap): Expr = apply(e)
+
   def apply(e: ENot): Expr =
     new Expr(exprInstance = ENotBody(e))
   implicit def fromENot(e: ENot): Expr = apply(e)
@@ -398,6 +402,7 @@ object implicits {
         case ETupleBody(e)                                => e.connectiveUsed
         case ESetBody(e)                                  => e.connectiveUsed
         case EMapBody(e)                                  => e.connectiveUsed
+        case EAMapBody(_)                                 => false
         case EVarBody(EVar(v))                            => VarLocallyFree.connectiveUsed(v)
         case ENotBody(ENot(p))                            => p.connectiveUsed
         case ENegBody(ENeg(p))                            => p.connectiveUsed
@@ -436,6 +441,7 @@ object implicits {
         case ETupleBody(e)                                => e.locallyFree
         case ESetBody(e)                                  => e.locallyFree.value
         case EMapBody(e)                                  => e.locallyFree.value
+        case EAMapBody(_)                                 => BitSet()
         case EVarBody(EVar(v))                            => VarLocallyFree.locallyFree(v, depth)
         case ENotBody(ENot(p))                            => p.locallyFree
         case ENegBody(ENeg(p))                            => p.locallyFree

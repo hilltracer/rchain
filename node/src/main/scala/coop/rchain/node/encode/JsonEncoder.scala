@@ -56,6 +56,7 @@ object JsonEncoder {
     Encoder.encodeList[Par].contramapArray[ParSet](s => s.ps.iterator.toList)
   implicit val encodeParMap: Encoder[ParMap] =
     Encoder.encodeList[(Par, Par)].contramap[ParMap](m => m.ps.iterator.toList)
+  implicit val encodeParAMap: Encoder[ParAMap]                 = ???
   implicit val encodeEMethod: Encoder[EMethod]                 = deriveEncoder[EMethod]
   implicit val encodeEMatches: Encoder[EMatches]               = deriveEncoder[EMatches]
   implicit val encodeEPercentPercent: Encoder[EPercentPercent] = deriveEncoder[EPercentPercent]
@@ -122,6 +123,7 @@ object JsonEncoder {
     Decoder.decodeList[Par].map[ParSet](p => ParSet(p, None))
   implicit val decodeParMap: Decoder[ParMap] =
     Decoder.decodeList[(Par, Par)].map[ParMap](m => ParMap(m))
+  implicit val decodeParAMap: Decoder[ParAMap]                 = ???
   implicit val decodeEMethod: Decoder[EMethod]                 = deriveDecoder[EMethod]
   implicit val decodeEMatches: Decoder[EMatches]               = deriveDecoder[EMatches]
   implicit val decodeEPercentPercent: Decoder[EPercentPercent] = deriveDecoder[EPercentPercent]

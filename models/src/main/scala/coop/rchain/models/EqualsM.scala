@@ -119,14 +119,16 @@ object EqualM extends EqualMDerivation {
       else Sync[F].pure(false)
   }
 
-  implicit val ESetEqual = gen[ESet]
-  implicit val EMapEqual = gen[EMap]
+  implicit val ESetEqual  = gen[ESet]
+  implicit val EMapEqual  = gen[EMap]
+  implicit val EAMapEqual = gen[EAMap]
 
   implicit val SortedParHashSetEqual: EqualM[SortedParHashSet] = by(_.sortedPars)
   implicit val SortedParMapEqual: EqualM[SortedParMap]         = by(_.sortedList)
 
-  implicit val ParSetEqual: EqualM[ParSet] = by(x => (x.ps, x.remainder, x.connectiveUsed))
-  implicit val ParMapEqual: EqualM[ParMap] = by(x => (x.ps, x.remainder, x.connectiveUsed))
+  implicit val ParSetEqual: EqualM[ParSet]   = by(x => (x.ps, x.remainder, x.connectiveUsed))
+  implicit val ParMapEqual: EqualM[ParMap]   = by(x => (x.ps, x.remainder, x.connectiveUsed))
+  implicit val ParAMapEqual: EqualM[ParAMap] = by(_.sortedAList)
 
   implicit val BlockInfoHash                  = gen[BlockInfo]
   implicit val LightBlockInfoHash             = gen[LightBlockInfo]

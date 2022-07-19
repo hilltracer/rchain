@@ -1,7 +1,7 @@
 package coop.rchain.models.rholang.sorter
 
 import cats.effect.Sync
-import coop.rchain.models.Par
+import coop.rchain.models.{AList, Par}
 import coop.rchain.models.rholang.sorter.ScoredTerm._
 import monix.eval.Coeval
 import cats.implicits._
@@ -39,6 +39,23 @@ object ordering {
         sequenced <- pairsSorted.sequence
       } yield sequenced.sorted.map(_.term)
       coeval.value
+    }
+  }
+
+  implicit class AlistSortOps(ps: AList[String, Par]) {
+    implicit val sync: Sync[Coeval] = implicitly[Sync[Coeval]]
+
+    def sortPar(par: Par): Par = Sortable[Par].sortMatch[Coeval](par).map(_.term).value()
+
+    def sort: AList[String, Par] = {
+      def loop(subList: AList[String, Par]): AList[String, Par] = {
+        val newList = subList.tree.sortBy(_._1).map {
+          case (k, Left(list)) => (k, Left(loop(list)))
+          case (k, Right(v))   => (k, Right(sortPar(v)))
+        }
+        AList(newList)
+      }
+      loop(ps)
     }
   }
 

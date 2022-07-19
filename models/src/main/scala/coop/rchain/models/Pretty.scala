@@ -62,6 +62,7 @@ trait PrettyInstances extends PrettyDerivation {
   implicit def prettyHashSet[A: Pretty] = fromIterable[HashSet[A], A]("HashSet")
   implicit def prettySortedParHashSet   = fromIterable[SortedParHashSet, Par]("SortedParHashSet(Seq")
   implicit def prettySortedParMap       = fromIterable[SortedParMap, (Par, Par)]("SortedParMap(Map")
+  implicit def prettyAMap               = fromAMap[AMap[String, Par], (String, Par)]("AMap(Map")
 
   implicit def prettyPair[A: Pretty, B: Pretty]: Pretty[(A, B)] =
     (value: (A, B), indentLevel: Int) => {
@@ -106,6 +107,8 @@ trait PrettyInstances extends PrettyDerivation {
     val prefixParensCount = prefix.count(_ == '(')
     prefix + parenthesised(_, _) + (")" * prefixParensCount)
   }
+
+  def fromAMap[F, A: Pretty](prefix: String): Pretty[F] = ???
 
   def fromWrapped[A, B: Pretty](f: A => B, wrappingCode: String => String): Pretty[A] =
     (value: A, indentLevel: Int) => wrappingCode(Pretty[B].pretty(f(value), indentLevel))

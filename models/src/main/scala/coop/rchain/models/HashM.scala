@@ -118,11 +118,13 @@ object HashM extends HashMDerivation {
 
   implicit val ConnectiveHash = gen[Connective]
 
-  implicit val ESetHash = gen[ESet]
-  implicit val EMapHash = gen[EMap]
+  implicit val ESetHash  = gen[ESet]
+  implicit val EMapHash  = gen[EMap]
+  implicit val EAMapHash = gen[EAMap]
 
   implicit val SortedParHashSetHash: HashM[SortedParHashSet] = seqHash[Par].contramap(_.sortedPars)
   implicit val SortedParMapHash: HashM[SortedParMap]         = seqHash[(Par, Par)].contramap(_.sortedList)
+  implicit val AMapHash: HashM[AMap[String, Par]]            = ???
 
   implicit val parSetHash: HashM[ParSet] = new HashM[ParSet] {
 
