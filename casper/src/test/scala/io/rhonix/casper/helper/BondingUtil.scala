@@ -1,4 +1,4 @@
-package rhonix.casper.helper
+package io.rhonix.casper.helper
 
 import cats.Functor
 import cats.syntax.functor._
