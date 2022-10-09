@@ -317,6 +317,14 @@ object RhoRuntime {
       }
     ),
     Definition[F](
+      "rho:rchain:deployerId:ops",
+      FixedChannels.DEPLOYER_ID_OPS,
+      3,
+      BodyRefs.DEPLOYER_ID_OPS, { ctx =>
+        ctx.systemProcesses.deployerIdOps
+      }
+    ),
+    Definition[F](
       "rho:registry:ops",
       FixedChannels.REG_OPS,
       3,
