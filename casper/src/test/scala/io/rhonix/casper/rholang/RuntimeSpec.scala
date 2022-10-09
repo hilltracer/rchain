@@ -1,4 +1,4 @@
-package rhonix.casper.rholang
+package io.rhonix.casper.rholang
 
 import io.rhonix.casper.genesis.Genesis
 import io.rhonix.casper.syntax._

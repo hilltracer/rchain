@@ -1,4 +1,4 @@
-package rhonix.casper.rholang.syntax
+package io.rhonix.casper.rholang.syntax
 
 import cats.data.EitherT
 import cats.effect.Sync

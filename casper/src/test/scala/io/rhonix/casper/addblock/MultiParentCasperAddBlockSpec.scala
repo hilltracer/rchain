@@ -1,4 +1,4 @@
-package rhonix.casper.addblock
+package io.rhonix.casper.addblock
 
 import cats.effect.Sync
 import cats.syntax.all._

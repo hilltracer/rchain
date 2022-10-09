@@ -61,9 +61,9 @@ object TransactionBalances {
   final case class DeployNotFound(transaction: TransactionInfo) extends Exception
 
   sealed trait AccountType
-  object NormalVault          extends AccountType
-  object PerValidatorVault    extends AccountType
-  object PosStakingVault      extends AccountType
+  object NormalVault                extends AccountType
+  object PerValidatorVault          extends AccountType
+  object PosStakingVault            extends AccountType
   object RhonixLabsPosMultiSigVault extends AccountType
 
   final case class RevAccount(address: RevAddress, amount: Long, accountType: AccountType) {
@@ -73,9 +73,9 @@ object TransactionBalances {
     def keccakHashedAddress: String =
       Base16.encode(RhoTrieTraverser.keccakParString(address.toBase58).drop(2))
     def typeString: String = accountType match {
-      case NormalVault          => "NormalVault"
-      case PerValidatorVault    => "PerValidatorVault"
-      case PosStakingVault      => "PosStakingVault"
+      case NormalVault                => "NormalVault"
+      case PerValidatorVault          => "PerValidatorVault"
+      case PosStakingVault            => "PosStakingVault"
       case RhonixLabsPosMultiSigVault => "RhonixLabsPosMultiSigVault"
     }
   }

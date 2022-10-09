@@ -1,4 +1,4 @@
-package rhonix.casper.genesis.contracts
+package io.rhonix.casper.genesis.contracts
 
 import io.rhonix.models.NormalizerEnv
 import io.rhonix.rholang.build.CompiledRholangTemplate

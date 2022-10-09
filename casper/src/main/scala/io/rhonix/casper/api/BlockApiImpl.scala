@@ -1,4 +1,4 @@
-package rhonix.casper.api
+package io.rhonix.casper.api
 
 import cats.data.OptionT
 import cats.effect.concurrent.Ref
