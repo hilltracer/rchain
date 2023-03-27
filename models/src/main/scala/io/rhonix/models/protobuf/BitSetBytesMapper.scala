@@ -1,4 +1,4 @@
-package io.rhonix.models
+package io.rhonix.models.protobuf
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder.LITTLE_ENDIAN

@@ -8,6 +8,7 @@ import io.rhonix.casper.protocol._
 import io.rhonix.catscontrib.Catscontrib._
 import io.rhonix.crypto.hash.Blake2b512Random
 import io.rhonix.crypto.signatures.Signed
+import io.rhonix.models.protobuf._
 import monix.eval.Coeval
 
 import scala.Function.tupled
@@ -102,16 +103,16 @@ object EqualM extends EqualMDerivation {
 
   implicit def coevalEqual[A: EqualM]: EqualM[Coeval[A]] = by(_.value)
 
-  implicit val ParEqual: EqualM[Par] = gen[Par]
-  implicit val ExprEqual             = gen[Expr]
-  implicit val VarEqual              = gen[Var]
-  implicit val SendEqual             = gen[Send]
-  implicit val ReceiveEqual          = gen[Receive]
-  implicit val ReceiveBindEqual      = gen[ReceiveBind]
-  implicit val NewEqual              = gen[New]
-  implicit val MatchEqual            = gen[Match]
+  implicit val ParEqual: EqualM[ParProto] = gen[ParProto]
+  implicit val ExprEqual                  = gen[ExprProto]
+  implicit val VarEqual                   = gen[VarProto]
+  implicit val SendEqual                  = gen[SendProto]
+  implicit val ReceiveEqual               = gen[ReceiveProto]
+  implicit val ReceiveBindEqual           = gen[ReceiveBindProto]
+  implicit val NewEqual                   = gen[NewProto]
+  implicit val MatchEqual                 = gen[MatchProto]
 
-  implicit val ConnectiveEqual = gen[Connective]
+  implicit val ConnectiveEqual = gen[ConnectiveProto]
   implicit def SignedEqual[A: EqualM] = new EqualM[Signed[A]] {
     override def equal[F[_]: Sync](self: Signed[A], other: Signed[A]): F[Boolean] =
       if (self.sigAlgorithm == other.sigAlgorithm && self.sig == other.sig)
@@ -119,14 +120,14 @@ object EqualM extends EqualMDerivation {
       else Sync[F].pure(false)
   }
 
-  implicit val ESetEqual = gen[ESet]
-  implicit val EMapEqual = gen[EMap]
+  implicit val ESetEqual = gen[ESetProto]
+  implicit val EMapEqual = gen[EMapProto]
 
-  implicit val SortedParHashSetEqual: EqualM[SortedParHashSet] = by(_.sortedPars)
-  implicit val SortedParMapEqual: EqualM[SortedParMap]         = by(_.sortedList)
+  implicit val SortedParHashSetEqual: EqualM[SortedParHashSetProto] = by(_.sortedPars)
+  implicit val SortedParMapEqual: EqualM[SortedParMapProto]         = by(_.sortedList)
 
-  implicit val ParSetEqual: EqualM[ParSet] = by(x => (x.ps, x.remainder, x.connectiveUsed))
-  implicit val ParMapEqual: EqualM[ParMap] = by(x => (x.ps, x.remainder, x.connectiveUsed))
+  implicit val ParSetEqual: EqualM[ParSetProto] = by(x => (x.ps, x.remainder, x.connectiveUsed))
+  implicit val ParMapEqual: EqualM[ParMapProto] = by(x => (x.ps, x.remainder, x.connectiveUsed))
 
   implicit val BlockInfoHash                  = gen[BlockInfo]
   implicit val LightBlockInfoHash             = gen[LightBlockInfo]
@@ -146,11 +147,11 @@ object EqualM extends EqualMDerivation {
   implicit val ProcessedDeployHash       = gen[ProcessedDeployProto]
   implicit val ProcessedSystemDeployHash = gen[ProcessedSystemDeployProto]
   implicit val ReportConsumeProto        = gen[ReportConsumeProto]
-  implicit val bindPattern               = gen[BindPattern]
-  implicit val parWithRandom             = gen[ParWithRandom]
+  implicit val bindPattern               = gen[BindPatternProto]
+  implicit val parWithRandom             = gen[ParWithRandomProto]
 
-  implicit val PCostHash              = gen[PCost]
-  implicit val TaggedContinuationHash = gen[TaggedContinuation]
+  implicit val PCostHash              = gen[PCostProto]
+  implicit val TaggedContinuationHash = gen[TaggedContinuationProto]
 }
 
 trait EqualMDerivation {

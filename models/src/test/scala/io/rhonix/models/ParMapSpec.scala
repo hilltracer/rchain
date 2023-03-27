@@ -1,6 +1,7 @@
 package io.rhonix.models
 
 import io.rhonix.models.Expr.ExprInstance.{EMapBody, GInt, GString}
+import io.rhonix.models.ProtoBindings.toProto
 import io.rhonix.models.Var.VarInstance.BoundVar
 import io.rhonix.models.rholang.implicits._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -29,9 +30,10 @@ class ParMapSpec extends AnyFlatSpec with Matchers {
       )
     )
 
-    val expr = Expr(EMapBody(sortedMap))
+    val expr1 = Expr(EMapBody(map))
+    val expr2 = Expr(EMapBody(sortedMap))
 
-    java.util.Arrays.equals(map.toByteArray, expr.toByteArray) should be(true)
+    java.util.Arrays.equals(toProto(expr1).toByteArray, toProto(expr2).toByteArray) should be(true)
   }
 
 }

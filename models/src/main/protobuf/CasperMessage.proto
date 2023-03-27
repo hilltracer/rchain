@@ -106,7 +106,7 @@ message RholangStateProto {
 
 message ProcessedDeployProto {
   DeployDataProto deploy        = 1 [(scalapb.field).no_box = true]; // user deploy
-  PCost cost                    = 2 [(scalapb.field).no_box = true]; // cost for execution of user deploy
+  PCostProto cost               = 2 [(scalapb.field).no_box = true]; // cost for execution of user deploy
   repeated EventProto deployLog = 3; // Rholang execution trace for deploy
   bool errored                  = 4; // true if deploy encountered a user error
   string systemDeployError      = 5; // error message for system deploy

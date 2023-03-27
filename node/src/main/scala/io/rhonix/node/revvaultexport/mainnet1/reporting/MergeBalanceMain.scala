@@ -142,7 +142,7 @@ object MergeBalanceMain {
   ) =
     for {
       result  <- runtime.playExploratoryDeploy(getBalanceRholang(revAddress), stateHash)
-      balance = result.head.exprs.head.getGInt
+      balance = result.head.exprs.head.exprInstance.gInt.getOrElse(0L)
       _       <- Log[F].info(s"Got balance ${balance} from ${revAddress}")
     } yield balance
 

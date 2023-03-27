@@ -188,13 +188,13 @@ object RhoType {
     def apply(token: GSysAuthToken): Par = GUnforgeable(GSysAuthTokenBody(token))
   }
 
-  sealed abstract class Extractor[RhoType] {
+  sealed abstract class Extractor[RhoType_] {
     type ScalaType
     def unapply(p: Par): Option[ScalaType]
   }
 
   object Extractor {
-    def derive[RhoType, Aux](implicit ev: Extractor[RhoType] { type ScalaType = Aux }) = ev
+    def derive[RhoType_, Aux](implicit ev: Extractor[RhoType_] { type ScalaType = Aux }) = ev
 
     implicit object BooleanExtractor extends Extractor[RhoBoolean.type] {
       override type ScalaType = Boolean

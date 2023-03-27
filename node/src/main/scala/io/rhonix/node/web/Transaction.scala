@@ -13,6 +13,8 @@ import io.rhonix.casper.protocol.{
   SlashSystemDeployDataProto
 }
 import io.rhonix.models.Par
+import io.rhonix.models.ProtoBindings.{fromProto, toProto}
+import io.rhonix.models.protobuf.ParProto
 import io.rhonix.node.web.Transaction.TransactionStore
 import io.rhonix.rspace.hashing.Blake2b256Hash
 import io.rhonix.shared.Base16
@@ -27,7 +29,7 @@ final case class Transaction(
     fromAddr: String,
     toAddr: String,
     amount: Long,
-    retUnforgeable: Par,
+    retUnforgeable: ParProto,
     failReason: Option[String]
 )
 
@@ -110,7 +112,9 @@ final case class TransactionAPIImpl[F[_]: Concurrent](
           consume.channels.headOption.map((_, produces))
       }
       .flatten
-      .collect { case (channel, produces) if channel == transferUnforgeable => produces.head }
+      .collect {
+        case (channel, produces) if channel == toProto(transferUnforgeable) => produces.head
+      }
       .map { produce =>
         val fromAddr       = produce.data.pars.head.exprs.head.getGString
         val toAddr         = produce.data.pars(2).exprs.head.getGString
@@ -196,7 +200,7 @@ object Transaction {
     import io.rhonix.rholang.interpreter.storage._
 
     val transactionCodec: Codec[Transaction] =
-      (utf8_32 :: utf8_32 :: vlong :: serializePar.toSizeHeadCodec :: optional[String](
+      (utf8_32 :: utf8_32 :: vlong :: serializeParProto.toSizeHeadCodec :: optional[String](
         bool,
         utf8_32
       )).as[Transaction]

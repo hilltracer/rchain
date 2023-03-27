@@ -396,49 +396,49 @@ trait SpatialMatcherInstances {
         _ <- listMatchSingle_[F, Send](
               remainder.sends,
               pattern.sends,
-              (p, s) => p.withSends(s),
+              (p, s) => p.copy(sends = s),
               varLevel,
               wildcard
             )
         _ <- listMatchSingle_[F, Receive](
               remainder.receives,
               pattern.receives,
-              (p, s) => p.withReceives(s),
+              (p, s) => p.copy(receives = s),
               varLevel,
               wildcard
             )
         _ <- listMatchSingle_[F, New](
               remainder.news,
               pattern.news,
-              (p, s) => p.withNews(s),
+              (p, s) => p.copy(news = s),
               varLevel,
               wildcard
             )
         _ <- listMatchSingle_[F, Expr](
               remainder.exprs,
               noFrees(pattern.exprs),
-              (p, e) => p.withExprs(e),
+              (p, e) => p.copy(exprs = e),
               varLevel,
               wildcard
             )
         _ <- listMatchSingle_[F, Match](
               remainder.matches,
               pattern.matches,
-              (p, e) => p.withMatches(e),
+              (p, e) => p.copy(matches = e),
               varLevel,
               wildcard
             )
         _ <- listMatchSingle_[F, Bundle](
               remainder.bundles,
               pattern.bundles,
-              (p, b) => p.withBundles(b),
+              (p, b) => p.copy(bundles = b),
               varLevel,
               wildcard
             )
         _ <- listMatchSingle_[F, GUnforgeable](
               remainder.unforgeables,
               pattern.unforgeables,
-              (p, i) => p.withUnforgeables(i),
+              (p, i) => p.copy(unforgeables = i),
               varLevel,
               wildcard
             )
@@ -495,13 +495,13 @@ trait SpatialMatcherInstances {
       case (ESetBody(ParSet(tlist, _, _, _)), ESetBody(ParSet(plist, _, _, rem))) =>
         val isWildcard      = rem.collect { case Var(Wildcard(_)) => true }.isDefined
         val remainderVarOpt = rem.collect { case Var(FreeVar(level)) => level }
-        val merger          = (p: Par, r: Seq[Par]) => p.withExprs(Seq(ParSet(r)))
+        val merger          = (p: Par, r: Seq[Par]) => p.copy(exprs = Seq(ParSet(r)))
         listMatchSingle_(tlist.toSeq, plist.toSeq, merger, remainderVarOpt, isWildcard)
 
       case (EMapBody(ParMap(tlist, _, _, _)), EMapBody(ParMap(plist, _, _, rem))) =>
         val isWildcard      = rem.collect { case Var(Wildcard(_)) => true }.isDefined
         val remainderVarOpt = rem.collect { case Var(FreeVar(level)) => level }
-        val merger          = (p: Par, r: Seq[(Par, Par)]) => p.withExprs(Seq(ParMap(r)))
+        val merger          = (p: Par, r: Seq[(Par, Par)]) => p.copy(exprs = Seq(ParMap(r)))
         listMatchSingle_(tlist.toSeq, plist.toSeq, merger, remainderVarOpt, isWildcard)
 
       case (EVarBody(EVar(vp)), EVarBody(EVar(vt))) => Alternative_[F].guard(vp == vt)

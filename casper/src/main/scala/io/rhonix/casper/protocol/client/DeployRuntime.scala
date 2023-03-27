@@ -11,6 +11,7 @@ import io.rhonix.catscontrib.ski.kp
 import io.rhonix.crypto.signatures.{Secp256k1, Signed}
 import io.rhonix.crypto.{PrivateKey, PublicKey}
 import io.rhonix.models.Par
+import io.rhonix.models.ProtoBindings.toProto
 import io.rhonix.models.syntax._
 import io.rhonix.shared.ThrowableOps._
 import io.rhonix.shared.Time
@@ -45,7 +46,7 @@ object DeployRuntime {
   ): F[Unit] =
     gracefulExit {
       listenAtNameUntilChanges(name) { par: Par =>
-        val request = DataAtNameQuery(Int.MaxValue, par)
+        val request = DataAtNameQuery(Int.MaxValue, toProto(par))
         EitherT(DeployService[F].listenForDataAtName(request))
       }.map(kp("")).value
     }
@@ -55,7 +56,7 @@ object DeployRuntime {
   ): F[Unit] =
     gracefulExit {
       listenAtNameUntilChanges(names) { pars: List[Par] =>
-        val request = ContinuationAtNameQuery(Int.MaxValue, pars)
+        val request = ContinuationAtNameQuery(Int.MaxValue, pars.map(toProto))
         EitherT(DeployService[F].listenForContinuationAtName(request))
       }.map(kp("")).value
     }

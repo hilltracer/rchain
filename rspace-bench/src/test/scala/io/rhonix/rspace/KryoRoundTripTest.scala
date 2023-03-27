@@ -1,6 +1,7 @@
 package io.rhonix.rspace
 
 import io.rhonix.models._
+import io.rhonix.models.protobuf._
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -13,12 +14,14 @@ class KryoRoundTripTest extends AnyFlatSpec with ScalaCheckPropertyChecks with M
   implicit override val generatorDrivenConfig =
     PropertyCheckConfiguration(minSuccessful = 50, sizeRange = 250)
 
-  implicit val exprSerialize               = KryoSerializers.serializer(classOf[Expr])
-  implicit val unfSerialize                = KryoSerializers.serializer(classOf[GUnforgeable])
-  implicit val parSerialize                = KryoSerializers.serializer(classOf[Par])
-  implicit val bindPatternSerialize        = KryoSerializers.serializer(classOf[BindPattern])
-  implicit val listParWithRandomSerialize  = KryoSerializers.serializer(classOf[ListParWithRandom])
-  implicit val taggedContinuationSerialize = KryoSerializers.serializer(classOf[TaggedContinuation])
+  implicit val exprSerialize        = KryoSerializers.serializer(classOf[ExprProto])
+  implicit val unfSerialize         = KryoSerializers.serializer(classOf[GUnforgeableProto])
+  implicit val parSerialize         = KryoSerializers.serializer(classOf[ParProto])
+  implicit val bindPatternSerialize = KryoSerializers.serializer(classOf[BindPatternProto])
+  implicit val listParWithRandomSerialize =
+    KryoSerializers.serializer(classOf[ListParWithRandomProto])
+  implicit val taggedContinuationSerialize =
+    KryoSerializers.serializer(classOf[TaggedContinuationProto])
 
   def roundTrip[A](in: A)(implicit s: Serialize2ByteBuffer[A]): Assertion = {
     val meta = s.encode(in)
@@ -36,10 +39,10 @@ class KryoRoundTripTest extends AnyFlatSpec with ScalaCheckPropertyChecks with M
       }
     }
 
-  import io.rhonix.models.testImplicits._
-  roundTripSerialization[Expr]
-  roundTripSerialization[Par]
-  roundTripSerialization[BindPattern]
-  roundTripSerialization[ListParWithRandom]
-  roundTripSerialization[TaggedContinuation]
+  import io.rhonix.models.protobuf.testImplicitsProto._
+  roundTripSerialization[ExprProto]
+  roundTripSerialization[ParProto]
+  roundTripSerialization[BindPatternProto]
+  roundTripSerialization[ListParWithRandomProto]
+  roundTripSerialization[TaggedContinuationProto]
 }

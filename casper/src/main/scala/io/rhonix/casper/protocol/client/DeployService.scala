@@ -10,6 +10,7 @@ import io.rhonix.models.either.implicits._
 import io.rhonix.monix.Monixable
 import io.rhonix.shared.syntax._
 import io.grpc.{ManagedChannel, ManagedChannelBuilder}
+import io.rhonix.models.ProtoBindings.fromProto
 
 import java.io.Closeable
 import java.util.concurrent.TimeUnit
@@ -164,7 +165,7 @@ class GrpcDeployService[F[_]: Monixable: Sync](host: String, port: Int, maxMessa
       .fromTask
       .toEitherF(
         _.message.error,
-        _.message.payload.map(r => (r.par, r.block))
+        _.message.payload.map(r => (r.par.map(fromProto), r.block))
       )
 
   def lastFinalizedBlock: F[Either[Seq[String], String]] =

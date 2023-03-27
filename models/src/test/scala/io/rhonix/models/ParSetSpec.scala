@@ -1,7 +1,9 @@
 package io.rhonix.models
 
 import io.rhonix.models.Expr.ExprInstance.{ESetBody, GInt}
+import io.rhonix.models.ProtoBindings.toProto
 import io.rhonix.models.Var.VarInstance.BoundVar
+import io.rhonix.models.protobuf.ExprProto
 import io.rhonix.models.rholang.implicits._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -33,13 +35,14 @@ class ParSetSpec extends AnyFlatSpec with Matchers {
         )
       )
 
-    val expr = Expr(ESetBody(sortedParGround))
+    val expr1 = Expr(ESetBody(parGround))
+    val expr2 = Expr(ESetBody(sortedParGround))
 
     // `ParSet` should be mapped to `ESet` using `ParSetTypeMapper`
-    java.util.Arrays.equals(parGround.toByteArray, expr.toByteArray) should be(true)
+    java.util.Arrays.equals(toProto(expr1).toByteArray, toProto(expr2).toByteArray) should be(true)
 
     // roundtrip serialization
-    Expr.parseFrom(expr.toByteArray) should be(expr)
+    ExprProto.parseFrom(toProto(expr2).toByteArray) should be(toProto(expr2))
   }
 
   it should "properly calculate locallyFree from enclosed `Par`s" in {

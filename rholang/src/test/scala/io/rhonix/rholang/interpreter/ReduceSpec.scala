@@ -6,6 +6,7 @@ import io.rhonix.crypto.hash.Blake2b512Random
 import io.rhonix.metrics.Metrics
 import io.rhonix.models.Connective.ConnectiveInstance._
 import io.rhonix.models.Expr.ExprInstance._
+import io.rhonix.models.ProtoBindings.toProto
 import io.rhonix.models.TaggedContinuation.TaggedCont.ParBody
 import io.rhonix.models.Var.VarInstance._
 import io.rhonix.models._
@@ -633,7 +634,7 @@ class ReduceSpec extends AnyFlatSpec with Matchers with AppendedClues with Persi
       case TestFixture(space, reducer) =>
         val pattern =
           Send(EVar(FreeVar(0)), List(GInt(7L), EVar(FreeVar(1))), persistent = false, BitSet())
-            .withConnectiveUsed(true)
+            .copy(connectiveUsed = true)
         val sendTarget =
           Send(
             EVar(BoundVar(1)),
@@ -1005,7 +1006,7 @@ class ReduceSpec extends AnyFlatSpec with Matchers with AppendedClues with Persi
       New(bindCount = 1, p = EVar(BoundVar(1)), locallyFree = BitSet(0))
     val subProc: Par =
       New(bindCount = 1, p = GPrivateBuilder("zero"), locallyFree = BitSet())
-    val serializedProcess         = subProc.toByteString
+    val serializedProcess         = toProto(subProc).toByteString
     val toByteArrayCall: Par      = EMethod("toByteArray", unsubProc, List[Par](), BitSet(0))
     val channel: Par              = GString("result")
     def wrapWithSend(p: Par): Par = Send(channel, List[Par](p), persistent = false, p.locallyFree)

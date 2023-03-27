@@ -448,8 +448,8 @@ class TreeHashMapMergeabilitySpec
       maps          <- RhoTrieTraverser.traverseTrie(depth, treeMapHandle, storeTokenPar, runtime)
       result = RhoTrieTraverser.vecParMapToMap(
         maps,
-        p => p.exprs.head.getGByteArray,
-        p => p.exprs.head.getGString
+        p => p.exprs.head.exprInstance.gByteArray.getOrElse(ByteString.EMPTY),
+        p => p.exprs.head.exprInstance.gString.getOrElse("")
       )
     } yield result
 
@@ -544,7 +544,9 @@ class TreeHashMapMergeabilitySpec
                         .keccakKey(kv.key)
                         .exprs
                         .head
-                        .getGByteArray
+                        .exprInstance
+                        .gByteArray
+                        .getOrElse(ByteString.EMPTY)
                         .substring(treeHashMapDepth, 32)
                       mergedTreeMap.getOrElse(hashedKey, "") != kv.value
                     })

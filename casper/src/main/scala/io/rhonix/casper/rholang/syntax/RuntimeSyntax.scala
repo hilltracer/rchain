@@ -32,10 +32,12 @@ import io.rhonix.crypto.signatures.{Secp256k1, Signed}
 import io.rhonix.metrics.implicits._
 import io.rhonix.metrics.{Metrics, Span}
 import io.rhonix.models.Expr.ExprInstance.EVarBody
+import io.rhonix.models.ProtoBindings.toProto
 import io.rhonix.models.Validator.Validator
 import io.rhonix.models.Var.VarInstance.FreeVar
 import io.rhonix.models._
 import io.rhonix.models.block.StateHash.StateHash
+import io.rhonix.models.protobuf.ParProto
 import io.rhonix.models.rholang.RhoType.RhoName
 import io.rhonix.models.syntax.modelsSyntaxByteString
 import io.rhonix.rholang.interpreter.RhoRuntime.bootstrapRegistry
@@ -609,14 +611,14 @@ final class RuntimeOps[F[_]](private val runtime: RhoRuntime[F]) extends AnyVal 
        """.stripMargin('#')
 
   private def toValidatorSeq(validatorsPar: Par): Seq[Validator] =
-    validatorsPar.exprs.head.getESetBody.ps.map { validator =>
+    toProto(validatorsPar.exprs.head).getESetBody.ps.map { validator => // TODO: Delete proto
       assert(validator.exprs.length == 1, "Validator in bonds map wasn't a single string.")
       validator.exprs.head.getGByteArray
     }.toList
 
   private def toBondMap(bondsMap: Par): Map[Validator, Long] =
-    bondsMap.exprs.head.getEMapBody.ps.map {
-      case (validator: Par, bond: Par) =>
+    toProto(bondsMap.exprs.head).getEMapBody.ps.map { // TODO: Delete proto
+      case (validator: ParProto, bond: ParProto) =>
         assert(validator.exprs.length == 1, "Validator in bonds map wasn't a single string.")
         assert(bond.exprs.length == 1, "Stake in bonds map wasn't a single integer.")
         val validatorName = validator.exprs.head.getGByteArray

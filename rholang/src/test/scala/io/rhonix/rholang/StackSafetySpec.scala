@@ -4,7 +4,9 @@ import io.rhonix.metrics
 import io.rhonix.metrics.{Metrics, NoopSpan, Span}
 import io.rhonix.models.Connective.ConnectiveInstance.ConnNotBody
 import io.rhonix.models.Expr.ExprInstance.GInt
+import io.rhonix.models.ProtoBindings.toProto
 import io.rhonix.models._
+import io.rhonix.models.protobuf.ParProto
 import io.rhonix.models.serialization.implicits._
 import io.rhonix.rholang.Resources.mkRuntime
 import io.rhonix.rholang.StackSafetySpec.findMaxRecursionDepth
@@ -233,19 +235,19 @@ class AstTypeclassesStackSafetySpec extends AnyFlatSpec with Matchers {
       if (n == 0) par
       else hugePar(n - 1, Par(connectives = Seq(Connective(ConnNotBody(par)))))
 
-    val par        = hugePar(maxRecursionDepth)
-    val anotherPar = hugePar(maxRecursionDepth)
+    val par        = toProto(hugePar(maxRecursionDepth))
+    val anotherPar = toProto(hugePar(maxRecursionDepth))
 
     noException shouldBe thrownBy {
       ProtoM.serializedSize(par).value
 
-      val encoded = Serialize[Par].encode(par)
-      Serialize[Par].decode(encoded)
+      val encoded = Serialize[ParProto].encode(par)
+      Serialize[ParProto].decode(encoded)
 
-      HashM[Par].hash[Coeval](par).value
+      HashM[ParProto].hash[Coeval](par).value
       par.hashCode()
 
-      EqualM[Par].equal[Coeval](par, anotherPar).value
+      EqualM[ParProto].equal[Coeval](par, anotherPar).value
       par == anotherPar
 
     }

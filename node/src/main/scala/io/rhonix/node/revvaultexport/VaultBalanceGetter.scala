@@ -68,7 +68,7 @@ object VaultBalanceGetter {
                  )
       extracted = RhoTrieTraverser.vecParMapToMap(
         vaultMap,
-        p => p.exprs.head.getGByteArray,
+        p => p.exprs.head.exprInstance.gByteArray.getOrElse(ByteString.EMPTY),
         p => p
       )
       result <- extracted.toList.traverse {

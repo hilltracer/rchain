@@ -16,7 +16,7 @@ import io.rhonix.casper.util.{BondsParser, VaultParser}
 import io.rhonix.crypto.PrivateKey
 import io.rhonix.crypto.signatures.Secp256k1
 import io.rhonix.metrics.{Metrics, NoopSpan, Span}
-import io.rhonix.models.{BindPattern, ListParWithRandom, Par, TaggedContinuation}
+import io.rhonix.models.{BindPattern, EList, ETuple, ListParWithRandom, Par, TaggedContinuation}
 import io.rhonix.node.revvaultexport.RhoTrieTraverser
 import io.rhonix.node.web.{
   CloseBlock,
@@ -110,8 +110,20 @@ object TransactionBalances {
                              contract,
                              block.postStateHash
                            )
-      perValidatorVaultAddr = perValidatorVaults.head.exprs.head.getEListBody.ps
-        .map(p => p.exprs.head.getETupleBody.ps(1).exprs.head.getGString)
+      perValidatorVaultAddr = perValidatorVaults.head.exprs.head.exprInstance.eListBody
+        .getOrElse(EList())
+        .ps
+        .map(
+          p =>
+            p.exprs.head.exprInstance.eTupleBody
+              .getOrElse(ETuple())
+              .ps(1)
+              .exprs
+              .head
+              .exprInstance
+              .gString
+              .getOrElse("")
+        )
     } yield perValidatorVaultAddr
   }
 

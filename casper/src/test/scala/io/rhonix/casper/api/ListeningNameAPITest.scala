@@ -14,6 +14,7 @@ import io.rhonix.crypto.hash.Blake2b256
 import io.rhonix.metrics.Span
 import io.rhonix.models.BlockHash.BlockHash
 import io.rhonix.models.Expr.ExprInstance.GInt
+import io.rhonix.models.ProtoBindings.toProto
 import io.rhonix.models.Validator.Validator
 import io.rhonix.models._
 import io.rhonix.models.blockImplicits.getRandomBlock
@@ -112,7 +113,7 @@ class ListeningNameAPITest
       length shouldBe 1
       val (par, block) = (blocks.head.postBlockData.head, blocks.head.block)
 
-      par shouldBe resultData
+      par shouldBe toProto(resultData)
       block shouldBe BlockApi.getLightBlockInfo(b1)
 
       rm.getData(*)(*) wasCalled once
@@ -136,7 +137,7 @@ class ListeningNameAPITest
       length shouldBe 1
       val (par, block) = (blocks.head.postBlockData.head, blocks.head.block)
 
-      par shouldBe resultData
+      par shouldBe toProto(resultData)
       block shouldBe BlockApi.getLightBlockInfo(b1)
 
       rm.getData(*)(*) wasCalled once

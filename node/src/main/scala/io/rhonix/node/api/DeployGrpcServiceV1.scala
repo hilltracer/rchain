@@ -8,6 +8,7 @@ import io.rhonix.casper.api._
 import io.rhonix.casper.protocol._
 import io.rhonix.casper.protocol.deploy.v1._
 import io.rhonix.catscontrib.TaskContrib._
+import io.rhonix.models.ProtoBindings.{fromProto, toProto}
 import io.rhonix.models.StacksafeMessage
 import io.rhonix.models.syntax._
 import io.rhonix.monix.Monixable
@@ -139,7 +140,7 @@ object DeployGrpcServiceV1 {
 
       def listenForDataAtName(request: DataAtNameQuery): Task[ListeningNameDataResponse] =
         defer(
-          blockApi.getListeningNameDataResponse(request.depth, request.name)
+          blockApi.getListeningNameDataResponse(request.depth, fromProto(request.name))
         ) { r =>
           import ListeningNameDataResponse.Message
           import ListeningNameDataResponse.Message._
@@ -151,12 +152,14 @@ object DeployGrpcServiceV1 {
         }
 
       def getDataAtName(request: DataAtNameByBlockQuery): Task[RhoDataResponse] =
-        defer(blockApi.getDataAtPar(request.par, request.blockHash, request.usePreStateHash)) { r =>
+        defer(
+          blockApi.getDataAtPar(fromProto(request.par), request.blockHash, request.usePreStateHash)
+        ) { r =>
           import RhoDataResponse.Message
           import RhoDataResponse.Message._
           RhoDataResponse(
             r.fold[Message](
-              Error, { case (par, block) => Payload(RhoDataPayload(par, block)) }
+              Error, { case (par, block) => Payload(RhoDataPayload(par.map(toProto), block)) }
             )
           )
         }
@@ -165,7 +168,7 @@ object DeployGrpcServiceV1 {
           request: ContinuationAtNameQuery
       ): Task[ContinuationAtNameResponse] =
         defer(
-          blockApi.getListeningNameContinuationResponse(request.depth, request.names)
+          blockApi.getListeningNameContinuationResponse(request.depth, request.names.map(fromProto))
         ) { r =>
           import ContinuationAtNameResponse.Message
           import ContinuationAtNameResponse.Message._
@@ -216,7 +219,7 @@ object DeployGrpcServiceV1 {
           import ExploratoryDeployResponse.Message
           import ExploratoryDeployResponse.Message._
           ExploratoryDeployResponse(r.fold[Message](Error, {
-            case (par, block) => Result(DataWithBlockInfo(par, block))
+            case (par, block) => Result(DataWithBlockInfo(par.map(toProto), block))
           }))
         }
 

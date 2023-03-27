@@ -4,6 +4,7 @@ import cats._
 import cats.effect.{Concurrent, Sync}
 import cats.syntax.all._
 import io.rhonix.metrics.{Metrics, NoopSpan, Span}
+import io.rhonix.models.ProtoBindings.toProto
 import io.rhonix.models._
 import io.rhonix.rholang.interpreter.accounting._
 import io.rhonix.rholang.interpreter.compiler.Compiler
@@ -12,11 +13,11 @@ import io.rhonix.rholang.interpreter.storage.StoragePrinter
 import io.rhonix.rholang.syntax._
 import io.rhonix.rspace.syntax._
 import io.rhonix.shared.Log
-import io.rhonix.store.LmdbDirStoreManager.{mb, Db, LmdbEnvConfig}
+import io.rhonix.store.LmdbDirStoreManager.{Db, LmdbEnvConfig, mb}
 import io.rhonix.store.{KeyValueStoreManager, LmdbDirStoreManager}
 import monix.eval.{Coeval, Task}
 import monix.execution.{CancelableFuture, Scheduler}
-import org.rogach.scallop.{stringListConverter, ScallopConf}
+import org.rogach.scallop.{ScallopConf, stringListConverter}
 
 import java.io.{BufferedOutputStream, FileOutputStream, FileReader, IOException}
 import java.nio.file.{Files, Path}
@@ -251,7 +252,7 @@ object RholangCLI {
     val compiledFileName = fileName.replaceAll(".rho$", "") + ".rhoc"
     Try({
       new java.io.PrintWriter(compiledFileName) {
-        write(sortedTerm.toProtoString)
+        write(toProto(sortedTerm).toProtoString)
         close()
       }
       println(s"Compiled $fileName to $compiledFileName")
@@ -262,7 +263,7 @@ object RholangCLI {
     val binaryFileName = fileName.replaceAll(".rho$", "") + ".bin"
     Try({
       val output = new BufferedOutputStream(new FileOutputStream(binaryFileName))
-      output.write(sortedTerm.toByteString.toByteArray)
+      output.write(toProto(sortedTerm).toByteString.toByteArray)
       output.close()
       println(s"Compiled $fileName to $binaryFileName")
     })

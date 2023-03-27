@@ -1,7 +1,6 @@
 package io.rhonix.models
 
 import cats.syntax.all._
-import com.google.protobuf
 import com.google.protobuf.ByteString
 import io.rhonix.casper.protocol._
 import io.rhonix.models.BlockHash.BlockHash
@@ -76,7 +75,7 @@ object BlockMetadata {
       validated = false,
       validationFailed = false,
       fringe = Set(),
-      fringeStateHash = protobuf.ByteString.EMPTY,
+      fringeStateHash = ByteString.EMPTY,
       memberOfFringe = none
     )
 }

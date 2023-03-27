@@ -48,10 +48,10 @@ final case class PrettyPrinter(
   import Coeval.pure
   import PrettyPrinter._
 
-  def buildString(e: Expr): String             = buildStringM(e).value.cap()
-  def buildString(v: Var): String              = buildStringM(v).value.cap()
-  def buildString(m: GeneratedMessage): String = buildStringM(m).value.cap()
-  def buildChannelString(p: Par): String       = buildChannelStringM(p).value.cap()
+  def buildString(e: Expr): String       = buildStringM(e).value.cap()
+  def buildString(v: Var): String        = buildStringM(v).value.cap()
+  def buildString(m: RhoType): String    = buildStringM(m).value.cap()
+  def buildChannelString(p: Par): String = buildChannelStringM(p).value.cap()
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   private def buildStringM(u: GUnforgeable): Coeval[String] = Coeval.defer {
@@ -181,10 +181,10 @@ final case class PrettyPrinter(
     }
   }
 
-  private def buildStringM(t: GeneratedMessage): Coeval[String] = buildStringM(t, 0)
+  private def buildStringM(t: RhoType): Coeval[String] = buildStringM(t, 0)
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
-  private def buildStringM(t: GeneratedMessage, indent: Int): Coeval[String] = Coeval.defer {
+  private def buildStringM(t: RhoType, indent: Int): Coeval[String] = Coeval.defer {
     val content = t match {
       case v: Var => buildStringM(v)
       case s: Send =>
@@ -326,7 +326,7 @@ final case class PrettyPrinter(
       .map(i => s"$boundId${boundShift + i}")
       .mkString(", ")
 
-  private def buildSeq[T <: GeneratedMessage](s: Seq[T]): Coeval[String] =
+  private def buildSeq[T <: RhoType](s: Seq[T]): Coeval[String] =
     s.zipWithIndex.foldLeft(pure("")) {
       case (string, (p, i)) =>
         string |+| buildStringM(p) |+| pure {

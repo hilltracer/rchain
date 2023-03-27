@@ -4,11 +4,12 @@ import com.google.protobuf.ByteString
 import io.rhonix.casper.PrettyPrinter
 import io.rhonix.casper.protocol.{BondInfo, JustificationInfo, LightBlockInfo}
 import io.rhonix.crypto.hash.Blake2b512Random
-import io.rhonix.models.Connective.ConnectiveInstance
-import io.rhonix.models.Expr.ExprInstance
-import io.rhonix.models.GUnforgeable.UnfInstance
-import io.rhonix.models.Var.{VarInstance, WildcardMsg}
-import io.rhonix.models._
+import io.rhonix.models.AlwaysEqual
+import io.rhonix.models.protobuf.ConnectiveProto.ConnectiveInstance
+import io.rhonix.models.protobuf.ExprProto.ExprInstance
+import io.rhonix.models.protobuf.GUnforgeableProto.UnfInstance
+import io.rhonix.models.protobuf.VarProto._
+import io.rhonix.models.protobuf._
 import io.rhonix.models.syntax._
 
 import scala.collection.immutable.BitSet
@@ -25,59 +26,61 @@ object JsonEncoder {
   implicit val encodeJustificationInfo: Encoder[JustificationInfo] =
     deriveEncoder[JustificationInfo]
   implicit val encodeLightBlockInfo: Encoder[LightBlockInfo] = deriveEncoder[LightBlockInfo]
-  implicit val encodePar: Encoder[Par]                       = deriveEncoder[Par]
-  implicit val encodeSend: Encoder[Send]                     = deriveEncoder[Send]
-  implicit val encodeWildcardMsg: Encoder[WildcardMsg]       = deriveEncoder[WildcardMsg]
+  implicit val encodePar: Encoder[ParProto]                  = deriveEncoder[ParProto]
+  implicit val encodeSend: Encoder[SendProto]                = deriveEncoder[SendProto]
+  implicit val encodeWildcardMsg: Encoder[WildcardMsgProto]  = deriveEncoder[WildcardMsgProto]
   implicit val encodeVarInstance: Encoder[VarInstance]       = deriveEncoder[VarInstance]
-  implicit val encodeVar: Encoder[Var]                       = deriveEncoder[Var]
-  implicit val encodeReceiveBind: Encoder[ReceiveBind]       = deriveEncoder[ReceiveBind]
-  implicit val encodeReceive: Encoder[Receive]               = deriveEncoder[Receive]
-  implicit val encodeNew: Encoder[New]                       = deriveEncoder[New]
-  implicit val encodeENot: Encoder[ENot]                     = deriveEncoder[ENot]
-  implicit val encodeENeg: Encoder[ENeg]                     = deriveEncoder[ENeg]
-  implicit val encodeEMult: Encoder[EMult]                   = deriveEncoder[EMult]
-  implicit val encodeEDiv: Encoder[EDiv]                     = deriveEncoder[EDiv]
-  implicit val encodeEPlus: Encoder[EPlus]                   = deriveEncoder[EPlus]
-  implicit val encodeEMinus: Encoder[EMinus]                 = deriveEncoder[EMinus]
-  implicit val encodeELt: Encoder[ELt]                       = deriveEncoder[ELt]
-  implicit val encodeELte: Encoder[ELte]                     = deriveEncoder[ELte]
-  implicit val encodeEGt: Encoder[EGt]                       = deriveEncoder[EGt]
-  implicit val encodeEGte: Encoder[EGte]                     = deriveEncoder[EGte]
-  implicit val encodeEEq: Encoder[EEq]                       = deriveEncoder[EEq]
-  implicit val encodeENeq: Encoder[ENeq]                     = deriveEncoder[ENeq]
-  implicit val encodeEAnd: Encoder[EAnd]                     = deriveEncoder[EAnd]
-  implicit val encodeEOr: Encoder[EOr]                       = deriveEncoder[EOr]
-  implicit val encodeEShortAnd: Encoder[EShortAnd]           = deriveEncoder[EShortAnd]
-  implicit val encodeEShortOr: Encoder[EShortOr]             = deriveEncoder[EShortOr]
-  implicit val encodeEVar: Encoder[EVar]                     = deriveEncoder[EVar]
-  implicit val encodeEList: Encoder[EList]                   = deriveEncoder[EList]
-  implicit val encodeETuple: Encoder[ETuple]                 = deriveEncoder[ETuple]
-  implicit val encodeParSet: Encoder[ParSet] =
-    Encoder.encodeList[Par].contramapArray[ParSet](s => s.ps.iterator.toList)
-  implicit val encodeParMap: Encoder[ParMap] =
-    Encoder.encodeList[(Par, Par)].contramap[ParMap](m => m.ps.iterator.toList)
-  implicit val encodeEMethod: Encoder[EMethod]                 = deriveEncoder[EMethod]
-  implicit val encodeEMatches: Encoder[EMatches]               = deriveEncoder[EMatches]
-  implicit val encodeEPercentPercent: Encoder[EPercentPercent] = deriveEncoder[EPercentPercent]
-  implicit val encodeEPlusPlus: Encoder[EPlusPlus]             = deriveEncoder[EPlusPlus]
-  implicit val encodeEMinusMinus: Encoder[EMinusMinus]         = deriveEncoder[EMinusMinus]
-  implicit val encodeEMod: Encoder[EMod]                       = deriveEncoder[EMod]
-  implicit val encodeExprInstance: Encoder[ExprInstance]       = deriveEncoder[ExprInstance]
-  implicit val encodeExpr: Encoder[Expr]                       = deriveEncoder[Expr]
-  implicit val encodeMatchCase: Encoder[MatchCase]             = deriveEncoder[MatchCase]
-  implicit val encodeMatch: Encoder[Match]                     = deriveEncoder[Match]
-  implicit val encodeGPrivate: Encoder[GPrivate]               = deriveEncoder[GPrivate]
-  implicit val encodeGDeployId: Encoder[GDeployId]             = deriveEncoder[GDeployId]
-  implicit val encodeGDeployerId: Encoder[GDeployerId]         = deriveEncoder[GDeployerId]
-  implicit val encodeGSysAuthToken: Encoder[GSysAuthToken]     = deriveEncoder[GSysAuthToken]
-  implicit val encodeUnfInstance: Encoder[UnfInstance]         = deriveEncoder[UnfInstance]
-  implicit val encodeGUnforgeable: Encoder[GUnforgeable]       = deriveEncoder[GUnforgeable]
-  implicit val encodeBundle: Encoder[Bundle]                   = deriveEncoder[Bundle]
-  implicit val encodeVarRef: Encoder[VarRef]                   = deriveEncoder[VarRef]
-  implicit val encodeConnectiveBody: Encoder[ConnectiveBody]   = deriveEncoder[ConnectiveBody]
+  implicit val encodeVar: Encoder[VarProto]                  = deriveEncoder[VarProto]
+  implicit val encodeReceiveBind: Encoder[ReceiveBindProto]  = deriveEncoder[ReceiveBindProto]
+  implicit val encodeReceive: Encoder[ReceiveProto]          = deriveEncoder[ReceiveProto]
+  implicit val encodeNew: Encoder[NewProto]                  = deriveEncoder[NewProto]
+  implicit val encodeENot: Encoder[ENotProto]                = deriveEncoder[ENotProto]
+  implicit val encodeENeg: Encoder[ENegProto]                = deriveEncoder[ENegProto]
+  implicit val encodeEMult: Encoder[EMultProto]              = deriveEncoder[EMultProto]
+  implicit val encodeEDiv: Encoder[EDivProto]                = deriveEncoder[EDivProto]
+  implicit val encodeEPlus: Encoder[EPlusProto]              = deriveEncoder[EPlusProto]
+  implicit val encodeEMinus: Encoder[EMinusProto]            = deriveEncoder[EMinusProto]
+  implicit val encodeELt: Encoder[ELtProto]                  = deriveEncoder[ELtProto]
+  implicit val encodeELte: Encoder[ELteProto]                = deriveEncoder[ELteProto]
+  implicit val encodeEGt: Encoder[EGtProto]                  = deriveEncoder[EGtProto]
+  implicit val encodeEGte: Encoder[EGteProto]                = deriveEncoder[EGteProto]
+  implicit val encodeEEq: Encoder[EEqProto]                  = deriveEncoder[EEqProto]
+  implicit val encodeENeq: Encoder[ENeqProto]                = deriveEncoder[ENeqProto]
+  implicit val encodeEAnd: Encoder[EAndProto]                = deriveEncoder[EAndProto]
+  implicit val encodeEOr: Encoder[EOrProto]                  = deriveEncoder[EOrProto]
+  implicit val encodeEShortAnd: Encoder[EShortAndProto]      = deriveEncoder[EShortAndProto]
+  implicit val encodeEShortOr: Encoder[EShortOrProto]        = deriveEncoder[EShortOrProto]
+  implicit val encodeEVar: Encoder[EVarProto]                = deriveEncoder[EVarProto]
+  implicit val encodeEList: Encoder[EListProto]              = deriveEncoder[EListProto]
+  implicit val encodeETuple: Encoder[ETupleProto]            = deriveEncoder[ETupleProto]
+  implicit val encodeParSet: Encoder[ParSetProto] =
+    Encoder.encodeList[ParProto].contramapArray[ParSetProto](s => s.ps.iterator.toList)
+  implicit val encodeParMap: Encoder[ParMapProto] =
+    Encoder.encodeList[(ParProto, ParProto)].contramap[ParMapProto](m => m.ps.iterator.toList)
+  implicit val encodeEMethod: Encoder[EMethodProto]   = deriveEncoder[EMethodProto]
+  implicit val encodeEMatches: Encoder[EMatchesProto] = deriveEncoder[EMatchesProto]
+  implicit val encodeEPercentPercent: Encoder[EPercentPercentProto] =
+    deriveEncoder[EPercentPercentProto]
+  implicit val encodeEPlusPlus: Encoder[EPlusPlusProto]         = deriveEncoder[EPlusPlusProto]
+  implicit val encodeEMinusMinus: Encoder[EMinusMinusProto]     = deriveEncoder[EMinusMinusProto]
+  implicit val encodeEMod: Encoder[EModProto]                   = deriveEncoder[EModProto]
+  implicit val encodeExprInstance: Encoder[ExprInstance]        = deriveEncoder[ExprInstance]
+  implicit val encodeExpr: Encoder[ExprProto]                   = deriveEncoder[ExprProto]
+  implicit val encodeMatchCase: Encoder[MatchCaseProto]         = deriveEncoder[MatchCaseProto]
+  implicit val encodeMatch: Encoder[MatchProto]                 = deriveEncoder[MatchProto]
+  implicit val encodeGPrivate: Encoder[GPrivateProto]           = deriveEncoder[GPrivateProto]
+  implicit val encodeGDeployId: Encoder[GDeployIdProto]         = deriveEncoder[GDeployIdProto]
+  implicit val encodeGDeployerId: Encoder[GDeployerIdProto]     = deriveEncoder[GDeployerIdProto]
+  implicit val encodeGSysAuthToken: Encoder[GSysAuthTokenProto] = deriveEncoder[GSysAuthTokenProto]
+  implicit val encodeUnfInstance: Encoder[UnfInstance]          = deriveEncoder[UnfInstance]
+  implicit val encodeGUnforgeable: Encoder[GUnforgeableProto]   = deriveEncoder[GUnforgeableProto]
+  implicit val encodeBundle: Encoder[BundleProto]               = deriveEncoder[BundleProto]
+  implicit val encodeVarRef: Encoder[VarRefProto]               = deriveEncoder[VarRefProto]
+  implicit val encodeConnectiveBody: Encoder[ConnectiveBodyProto] =
+    deriveEncoder[ConnectiveBodyProto]
   implicit val encodeConnectiveInstance: Encoder[ConnectiveInstance] =
     deriveEncoder[ConnectiveInstance]
-  implicit val encodeConnective: Encoder[Connective] = deriveEncoder[Connective]
+  implicit val encodeConnective: Encoder[ConnectiveProto] = deriveEncoder[ConnectiveProto]
   implicit val encodeAlwaysEqual: Encoder[AlwaysEqual[BitSet]] =
     Encoder.encodeUnit.contramap[AlwaysEqual[BitSet]](_ => ())
 
@@ -91,59 +94,61 @@ object JsonEncoder {
   implicit val decodeJustificationInfo: Decoder[JustificationInfo] =
     deriveDecoder[JustificationInfo]
   implicit val decodeLightBlockInfo: Decoder[LightBlockInfo] = deriveDecoder[LightBlockInfo]
-  implicit val decodePar: Decoder[Par]                       = deriveDecoder[Par]
-  implicit val decodeSend: Decoder[Send]                     = deriveDecoder[Send]
-  implicit val decodeWildcardMsg: Decoder[WildcardMsg]       = deriveDecoder[WildcardMsg]
+  implicit val decodePar: Decoder[ParProto]                  = deriveDecoder[ParProto]
+  implicit val decodeSend: Decoder[SendProto]                = deriveDecoder[SendProto]
+  implicit val decodeWildcardMsg: Decoder[WildcardMsgProto]  = deriveDecoder[WildcardMsgProto]
   implicit val decodeVarInstance: Decoder[VarInstance]       = deriveDecoder[VarInstance]
-  implicit val decodeVar: Decoder[Var]                       = deriveDecoder[Var]
-  implicit val decodeReceiveBind: Decoder[ReceiveBind]       = deriveDecoder[ReceiveBind]
-  implicit val decodeReceive: Decoder[Receive]               = deriveDecoder[Receive]
-  implicit val decodeNew: Decoder[New]                       = deriveDecoder[New]
-  implicit val decodeENot: Decoder[ENot]                     = deriveDecoder[ENot]
-  implicit val decodeENeg: Decoder[ENeg]                     = deriveDecoder[ENeg]
-  implicit val decodeEMult: Decoder[EMult]                   = deriveDecoder[EMult]
-  implicit val decodeEDiv: Decoder[EDiv]                     = deriveDecoder[EDiv]
-  implicit val decodeEPlus: Decoder[EPlus]                   = deriveDecoder[EPlus]
-  implicit val decodeEMinus: Decoder[EMinus]                 = deriveDecoder[EMinus]
-  implicit val decodeELt: Decoder[ELt]                       = deriveDecoder[ELt]
-  implicit val decodeELte: Decoder[ELte]                     = deriveDecoder[ELte]
-  implicit val decodeEGt: Decoder[EGt]                       = deriveDecoder[EGt]
-  implicit val decodeEGte: Decoder[EGte]                     = deriveDecoder[EGte]
-  implicit val decodeEEq: Decoder[EEq]                       = deriveDecoder[EEq]
-  implicit val decodeENeq: Decoder[ENeq]                     = deriveDecoder[ENeq]
-  implicit val decodeEAnd: Decoder[EAnd]                     = deriveDecoder[EAnd]
-  implicit val decodeEOr: Decoder[EOr]                       = deriveDecoder[EOr]
-  implicit val decodeEShortAnd: Decoder[EShortAnd]           = deriveDecoder[EShortAnd]
-  implicit val decodeEShortOr: Decoder[EShortOr]             = deriveDecoder[EShortOr]
-  implicit val decodeEVar: Decoder[EVar]                     = deriveDecoder[EVar]
-  implicit val decodeEList: Decoder[EList]                   = deriveDecoder[EList]
-  implicit val decodeETuple: Decoder[ETuple]                 = deriveDecoder[ETuple]
-  implicit val decodeParSet: Decoder[ParSet] =
-    Decoder.decodeList[Par].map[ParSet](p => ParSet(p, None))
-  implicit val decodeParMap: Decoder[ParMap] =
-    Decoder.decodeList[(Par, Par)].map[ParMap](m => ParMap(m))
-  implicit val decodeEMethod: Decoder[EMethod]                 = deriveDecoder[EMethod]
-  implicit val decodeEMatches: Decoder[EMatches]               = deriveDecoder[EMatches]
-  implicit val decodeEPercentPercent: Decoder[EPercentPercent] = deriveDecoder[EPercentPercent]
-  implicit val decodeEPlusPlus: Decoder[EPlusPlus]             = deriveDecoder[EPlusPlus]
-  implicit val decodeEMinusMinus: Decoder[EMinusMinus]         = deriveDecoder[EMinusMinus]
-  implicit val decodeEMod: Decoder[EMod]                       = deriveDecoder[EMod]
-  implicit val decodeExprInstance: Decoder[ExprInstance]       = deriveDecoder[ExprInstance]
-  implicit val decodeExpr: Decoder[Expr]                       = deriveDecoder[Expr]
-  implicit val decodeMatchCase: Decoder[MatchCase]             = deriveDecoder[MatchCase]
-  implicit val decodeMatch: Decoder[Match]                     = deriveDecoder[Match]
-  implicit val decodeGPrivate: Decoder[GPrivate]               = deriveDecoder[GPrivate]
-  implicit val decodeGDeployId: Decoder[GDeployId]             = deriveDecoder[GDeployId]
-  implicit val decodeGDeployerId: Decoder[GDeployerId]         = deriveDecoder[GDeployerId]
-  implicit val decodeGSysAuthToken: Decoder[GSysAuthToken]     = deriveDecoder[GSysAuthToken]
-  implicit val decodeUnfInstance: Decoder[UnfInstance]         = deriveDecoder[UnfInstance]
-  implicit val decodeGUnforgeable: Decoder[GUnforgeable]       = deriveDecoder[GUnforgeable]
-  implicit val decodeBundle: Decoder[Bundle]                   = deriveDecoder[Bundle]
-  implicit val decodeVarRef: Decoder[VarRef]                   = deriveDecoder[VarRef]
-  implicit val decodeConnectiveBody: Decoder[ConnectiveBody]   = deriveDecoder[ConnectiveBody]
+  implicit val decodeVar: Decoder[VarProto]                  = deriveDecoder[VarProto]
+  implicit val decodeReceiveBind: Decoder[ReceiveBindProto]  = deriveDecoder[ReceiveBindProto]
+  implicit val decodeReceive: Decoder[ReceiveProto]          = deriveDecoder[ReceiveProto]
+  implicit val decodeNew: Decoder[NewProto]                  = deriveDecoder[NewProto]
+  implicit val decodeENot: Decoder[ENotProto]                = deriveDecoder[ENotProto]
+  implicit val decodeENeg: Decoder[ENegProto]                = deriveDecoder[ENegProto]
+  implicit val decodeEMult: Decoder[EMultProto]              = deriveDecoder[EMultProto]
+  implicit val decodeEDiv: Decoder[EDivProto]                = deriveDecoder[EDivProto]
+  implicit val decodeEPlus: Decoder[EPlusProto]              = deriveDecoder[EPlusProto]
+  implicit val decodeEMinus: Decoder[EMinusProto]            = deriveDecoder[EMinusProto]
+  implicit val decodeELt: Decoder[ELtProto]                  = deriveDecoder[ELtProto]
+  implicit val decodeELte: Decoder[ELteProto]                = deriveDecoder[ELteProto]
+  implicit val decodeEGt: Decoder[EGtProto]                  = deriveDecoder[EGtProto]
+  implicit val decodeEGte: Decoder[EGteProto]                = deriveDecoder[EGteProto]
+  implicit val decodeEEq: Decoder[EEqProto]                  = deriveDecoder[EEqProto]
+  implicit val decodeENeq: Decoder[ENeqProto]                = deriveDecoder[ENeqProto]
+  implicit val decodeEAnd: Decoder[EAndProto]                = deriveDecoder[EAndProto]
+  implicit val decodeEOr: Decoder[EOrProto]                  = deriveDecoder[EOrProto]
+  implicit val decodeEShortAnd: Decoder[EShortAndProto]      = deriveDecoder[EShortAndProto]
+  implicit val decodeEShortOr: Decoder[EShortOrProto]        = deriveDecoder[EShortOrProto]
+  implicit val decodeEVar: Decoder[EVarProto]                = deriveDecoder[EVarProto]
+  implicit val decodeEList: Decoder[EListProto]              = deriveDecoder[EListProto]
+  implicit val decodeETuple: Decoder[ETupleProto]            = deriveDecoder[ETupleProto]
+  implicit val decodeParSet: Decoder[ParSetProto] =
+    Decoder.decodeList[ParProto].map[ParSetProto](p => ParSetProto(p, None))
+  implicit val decodeParMap: Decoder[ParMapProto] =
+    Decoder.decodeList[(ParProto, ParProto)].map[ParMapProto](m => ParMapProto(m))
+  implicit val decodeEMethod: Decoder[EMethodProto]   = deriveDecoder[EMethodProto]
+  implicit val decodeEMatches: Decoder[EMatchesProto] = deriveDecoder[EMatchesProto]
+  implicit val decodeEPercentPercent: Decoder[EPercentPercentProto] =
+    deriveDecoder[EPercentPercentProto]
+  implicit val decodeEPlusPlus: Decoder[EPlusPlusProto]         = deriveDecoder[EPlusPlusProto]
+  implicit val decodeEMinusMinus: Decoder[EMinusMinusProto]     = deriveDecoder[EMinusMinusProto]
+  implicit val decodeEMod: Decoder[EModProto]                   = deriveDecoder[EModProto]
+  implicit val decodeExprInstance: Decoder[ExprInstance]        = deriveDecoder[ExprInstance]
+  implicit val decodeExpr: Decoder[ExprProto]                   = deriveDecoder[ExprProto]
+  implicit val decodeMatchCase: Decoder[MatchCaseProto]         = deriveDecoder[MatchCaseProto]
+  implicit val decodeMatch: Decoder[MatchProto]                 = deriveDecoder[MatchProto]
+  implicit val decodeGPrivate: Decoder[GPrivateProto]           = deriveDecoder[GPrivateProto]
+  implicit val decodeGDeployId: Decoder[GDeployIdProto]         = deriveDecoder[GDeployIdProto]
+  implicit val decodeGDeployerId: Decoder[GDeployerIdProto]     = deriveDecoder[GDeployerIdProto]
+  implicit val decodeGSysAuthToken: Decoder[GSysAuthTokenProto] = deriveDecoder[GSysAuthTokenProto]
+  implicit val decodeUnfInstance: Decoder[UnfInstance]          = deriveDecoder[UnfInstance]
+  implicit val decodeGUnforgeable: Decoder[GUnforgeableProto]   = deriveDecoder[GUnforgeableProto]
+  implicit val decodeBundle: Decoder[BundleProto]               = deriveDecoder[BundleProto]
+  implicit val decodeVarRef: Decoder[VarRefProto]               = deriveDecoder[VarRefProto]
+  implicit val decodeConnectiveBody: Decoder[ConnectiveBodyProto] =
+    deriveDecoder[ConnectiveBodyProto]
   implicit val decodeConnectiveInstance: Decoder[ConnectiveInstance] =
     deriveDecoder[ConnectiveInstance]
-  implicit val decodeConnective: Decoder[Connective] = deriveDecoder[Connective]
+  implicit val decodeConnective: Decoder[ConnectiveProto] = deriveDecoder[ConnectiveProto]
   implicit val decodeAlwaysEqual: Decoder[AlwaysEqual[BitSet]] =
     Decoder.decodeUnit.map[AlwaysEqual[BitSet]](_ => AlwaysEqual(BitSet()))
 

@@ -22,7 +22,7 @@ class RhoExprToParSpec extends AnyPropSpec with ScalaCheckDrivenPropertyChecks w
   }
 
   // Converts RhoExpr to Par and then back to RhoExpr
-  val rhoExprToRhoExpr = rhoExprToParProto _ andThen exprFromParProto
+  val rhoExprToRhoExpr = rhoExprToParProto _ andThen exprFromParRho
 
   val genHexString = Gen.listOf(arbByte.arbitrary).map(_.toArray.toHexString)
 

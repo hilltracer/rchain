@@ -2,12 +2,14 @@ package io.rhonix.models
 
 import com.google.protobuf.{ByteString, CodedInputStream}
 import io.rhonix.models.Assertions.assertEqual
-import io.rhonix.models.BitSetBytesMapper._
 import io.rhonix.models.Connective.ConnectiveInstance.{Empty => _}
-import io.rhonix.models.serialization.implicits._
-import io.rhonix.models.testImplicits._
+import io.rhonix.models.protobuf.BitSetBytesMapper.{bitSetToByteString, byteStringToBitSet}
+import io.rhonix.models.protobuf._
+import io.rhonix.models.serialization.implicits.mkProtobufInstance
+import io.rhonix.models.protobuf.testImplicitsProto._
 import io.rhonix.shared.Serialize
 import monix.eval.Coeval
+import org.scalacheck.ScalacheckShapeless.arbitrarySingletonType
 import org.scalacheck.{Arbitrary, Shrink}
 import org.scalatest.Assertion
 import org.scalatest.flatspec.AnyFlatSpec
@@ -26,15 +28,15 @@ class RhoTypesTest extends AnyFlatSpec with ScalaCheckPropertyChecks with Matche
 
   behavior of "Round-trip serialization"
 
-  roundTripSerialization[Par]
-  roundTripSerialization[Expr]
-  roundTripSerialization[Var]
-  roundTripSerialization[Send]
-  roundTripSerialization[Receive]
-  roundTripSerialization[New]
-  roundTripSerialization[Match]
-  roundTripSerialization[ESet]
-  roundTripSerialization[EMap]
+  roundTripSerialization[ParProto]
+  roundTripSerialization[ExprProto]
+  roundTripSerialization[VarProto]
+  roundTripSerialization[SendProto]
+  roundTripSerialization[ReceiveProto]
+  roundTripSerialization[NewProto]
+  roundTripSerialization[MatchProto]
+  roundTripSerialization[ESetProto]
+  roundTripSerialization[EMapProto]
 
   def roundTripSerialization[A <: StacksafeMessage[A]: Serialize: Arbitrary: Shrink: Pretty](
       implicit tag: ClassTag[A],

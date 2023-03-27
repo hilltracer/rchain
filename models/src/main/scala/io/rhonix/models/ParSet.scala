@@ -12,7 +12,7 @@ final case class ParSet(
     connectiveUsed: Boolean,
     locallyFree: Coeval[BitSet],
     remainder: Option[Var]
-) {
+) extends RhoType {
 
   override def equals(o: scala.Any): Boolean = o match {
     case parSet: ParSet =>

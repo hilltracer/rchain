@@ -1,12 +1,10 @@
 package io.rhonix.models
 
 import java.nio.ByteBuffer
-
 import scala.reflect.ClassTag
-
 import com.esotericsoftware.kryo.{Kryo, Serializer}
 import com.esotericsoftware.kryo.io._
-import io.rhonix.models.Var.VarInstance
+import io.rhonix.models.protobuf._
 import org.objenesis.strategy.StdInstantiatorStrategy
 
 trait Serialize2ByteBuffer[A] {
@@ -35,24 +33,24 @@ class DefaultSerializer[T](implicit tag: ClassTag[T]) extends Serializer[T] {
 
 object KryoSerializers {
 
-  object ParMapSerializer extends Serializer[ParMap] {
-    import ParMapTypeMapper._
+  object ParMapSerializer extends Serializer[ParMapProto] {
+    import io.rhonix.models.protobuf.ParMapTypeMapper._
 
-    override def write(kryo: Kryo, output: Output, parMap: ParMap): Unit =
+    override def write(kryo: Kryo, output: Output, parMap: ParMapProto): Unit =
       kryo.writeObject(output, parMapToEMap(parMap))
 
-    override def read(kryo: Kryo, input: Input, `type`: Class[_ <: ParMap]): ParMap =
-      emapToParMap(kryo.readObject(input, classOf[EMap]))
+    override def read(kryo: Kryo, input: Input, `type`: Class[_ <: ParMapProto]): ParMapProto =
+      emapToParMap(kryo.readObject(input, classOf[EMapProto]))
   }
 
-  object ParSetSerializer extends Serializer[ParSet] {
-    import ParSetTypeMapper._
+  object ParSetSerializer extends Serializer[ParSetProto] {
+    import io.rhonix.models.protobuf.ParSetTypeMapper._
 
-    override def write(kryo: Kryo, output: Output, parSet: ParSet): Unit =
+    override def write(kryo: Kryo, output: Output, parSet: ParSetProto): Unit =
       kryo.writeObject(output, parSetToESet(parSet))
 
-    override def read(kryo: Kryo, input: Input, `type`: Class[_ <: ParSet]): ParSet =
-      esetToParSet(kryo.readObject(input, classOf[ESet]))
+    override def read(kryo: Kryo, input: Input, `type`: Class[_ <: ParSetProto]): ParSetProto =
+      esetToParSet(kryo.readObject(input, classOf[ESetProto]))
   }
 
   def emptyReplacingSerializer[T](thunk: T => Boolean, replaceWith: T)(implicit tag: ClassTag[T]) =
@@ -70,31 +68,34 @@ object KryoSerializers {
     }
 
   val TaggedContinuationSerializer =
-    emptyReplacingSerializer[TaggedContinuation](_.taggedCont.isEmpty, TaggedContinuation())
+    emptyReplacingSerializer[TaggedContinuationProto](
+      _.taggedCont.isEmpty,
+      TaggedContinuationProto()
+    )
 
   val VarSerializer =
-    emptyReplacingSerializer[Var](_.varInstance.isEmpty, Var())
+    emptyReplacingSerializer[VarProto](_.varInstance.isEmpty, VarProto())
 
   val ExprSerializer =
-    emptyReplacingSerializer[Expr](_.exprInstance.isEmpty, Expr())
+    emptyReplacingSerializer[ExprProto](_.exprInstance.isEmpty, ExprProto())
 
   val UnfSerializer =
-    emptyReplacingSerializer[GUnforgeable](_.unfInstance.isEmpty, GUnforgeable())
+    emptyReplacingSerializer[GUnforgeableProto](_.unfInstance.isEmpty, GUnforgeableProto())
 
   val ConnectiveSerializer =
-    emptyReplacingSerializer[Connective](_.connectiveInstance.isEmpty, Connective())
+    emptyReplacingSerializer[ConnectiveProto](_.connectiveInstance.isEmpty, ConnectiveProto())
 
   val NoneSerializer: DefaultSerializer[None.type] =
     emptyReplacingSerializer[None.type](_.isEmpty, None)
 
   val kryo = new Kryo()
-  kryo.register(classOf[ParMap], ParMapSerializer)
-  kryo.register(classOf[ParSet], ParSetSerializer)
-  kryo.register(classOf[TaggedContinuation], TaggedContinuationSerializer)
-  kryo.register(classOf[Var], VarSerializer)
-  kryo.register(classOf[Expr], ExprSerializer)
-  kryo.register(classOf[GUnforgeable], UnfSerializer)
-  kryo.register(classOf[Connective], ConnectiveSerializer)
+  kryo.register(classOf[ParMapProto], ParMapSerializer)
+  kryo.register(classOf[ParSetProto], ParSetSerializer)
+  kryo.register(classOf[TaggedContinuationProto], TaggedContinuationSerializer)
+  kryo.register(classOf[VarProto], VarSerializer)
+  kryo.register(classOf[ExprProto], ExprSerializer)
+  kryo.register(classOf[GUnforgeableProto], UnfSerializer)
+  kryo.register(classOf[ConnectiveProto], ConnectiveSerializer)
   kryo.register(None.getClass, NoneSerializer)
 
   kryo.setRegistrationRequired(false)

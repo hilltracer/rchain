@@ -4,6 +4,7 @@ import java.util.Arrays
 import io.rhonix.crypto.PublicKey
 import io.rhonix.crypto.hash.{Blake2b256, Keccak256}
 import io.rhonix.models.GPrivate
+import io.rhonix.models.ProtoBindings.toProto
 import io.rhonix.rholang.interpreter.util.codec.Base58
 import io.rhonix.shared.Base16
 
@@ -63,7 +64,7 @@ class AddressTools(prefix: Array[Byte], keyLength: Int, checksumLength: Int) {
   }
 
   def fromUnforgeable(gprivate: GPrivate): Address = {
-    val keyHash = Keccak256.hash(gprivate.toByteArray)
+    val keyHash = Keccak256.hash(toProto(gprivate).toByteArray)
     val payload = prefix ++ keyHash
     Address(prefix, keyHash, computeChecksum(payload))
   }

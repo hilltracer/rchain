@@ -95,7 +95,7 @@ class AuthKeyUpdateSpec extends AnyFlatSpec with Matchers with Inspectors {
         _       = assert(b2.state.deploys.head.cost.cost > 0L, s"$b2 deploy cost is 0L")
         _       = assert(b2.state.deploys.head.systemDeployError.isEmpty, s"$b2 system deploy failed")
         _       = assert(!b2.state.deploys.head.isFailed, s"$b2 deploy failed")
-        balance = ret.head.exprs.head.getGInt
+        balance = ret.head.exprs.head.exprInstance.gInt.getOrElse(0L)
         b5 <- node
                .addBlock(
                  ConstructDeploy
@@ -105,9 +105,11 @@ class AuthKeyUpdateSpec extends AnyFlatSpec with Matchers with Inspectors {
         _    = assert(b5.state.deploys.head.cost.cost > 0L, s"$b5 deploy cost is 0L")
         _    = assert(b5.state.deploys.head.systemDeployError.isEmpty, s"$b5 system deploy failed")
         _    = assert(!b5.state.deploys.head.isFailed, s"$b5 deploy failed")
-        _    = assert(ret2.head.exprs.head.getGInt == balance + transferAmount.toLong)
+        _ = assert(
+          ret2.head.exprs.head.exprInstance.gInt.getOrElse(0L) == balance + transferAmount.toLong
+        )
         ret3 <- rm.playExploratoryDeploy(exploreUpdateResultTerm, b2.postStateHash)
-        _    = assert(ret3.head.exprs.head.getGInt == 100)
+        _    = assert(ret3.head.exprs.head.exprInstance.gInt.getOrElse(0L) == 100)
       } yield ()
     }
   }

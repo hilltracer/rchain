@@ -1,4 +1,4 @@
-package io.rhonix.models
+package io.rhonix.models.protobuf
 
 import com.google.protobuf.ByteString
 import scalapb.TypeMapper

@@ -160,7 +160,7 @@ object StoragePrinter {
               peeks.nonEmpty,
               patterns.map(_.freeCount).sum
             )
-          case _ => Receive(receiveBinds, Par.defaultInstance, persist)
+          case _ => Receive(receiveBinds, Par(), persist)
         }
     }
     receives.foldLeft(Par()) { (acc: Par, receive: Receive) =>
