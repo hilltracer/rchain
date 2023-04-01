@@ -38,7 +38,7 @@ jobs:
   build_base:
     name: Build Base
     runs-on: ubuntu-latest
-    container: rhonix/buildenv
+    container: rchain/buildenv
     outputs:
       VERSION: ${{ env.VERSION }}
       BRANCH: ${{ env.BRANCH }}
@@ -104,7 +104,7 @@ jobs:
     name: Unit Tests
     needs: build_base
     runs-on: ubuntu-latest
-    container: rhonix/buildenv
+    container: rchain/buildenv
     strategy:
       fail-fast: false
       matrix:
@@ -164,7 +164,7 @@ jobs:
     name: Build Docker Image
     needs: build_base
     runs-on: ubuntu-latest
-    container: rhonix/buildenv
+    container: rchain/buildenv
     steps:
       - name: Load Working Tree
         uses: actions/download-artifact@v1
@@ -207,7 +207,7 @@ jobs:
     needs: build_base
     if: "github.event_name != 'pull_request'"
     runs-on: ubuntu-latest
-    container: rhonix/buildenv
+    container: rchain/buildenv
     steps:
       - name: Load Working Tree
         uses: actions/download-artifact@v1
@@ -348,7 +348,7 @@ jobs:
               -e TESTS="$TESTS" \
               -e _JAVA_OPTIONS="$_JAVA_OPTIONS" \
               -w /work \
-              rhonix/buildenv ./.github/run-integration-test-selection
+              rchain/buildenv ./.github/run-integration-test-selection
 
       # Files created in rhonix/buildenv container are owned by root, so we need
       # to change ownership to host runner unprivileged account here, because

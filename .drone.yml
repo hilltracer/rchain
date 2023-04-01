@@ -25,7 +25,7 @@ __pr_build_condiditions: &pr_build_conditions
     event: [ pull_request ]
 
 __buildenv: &buildenv
-  image: rhonix/buildenv:latest
+  image: rchain/buildenv:latest
 
 __sbtcompileenv: &sbtcompileenv
   <<: *buildenv
@@ -46,7 +46,7 @@ __sbttestenv: &sbttestenv
 
 clone:
   git-clone:
-    image: rhonix/buildenv:latest
+    image: rchian/buildenv:latest
     commands: |
       set -ex
       git clone -b ${DRONE_TAG:-$DRONE_BRANCH} $DRONE_REMOTE_URL .
