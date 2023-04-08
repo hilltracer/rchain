@@ -1,4 +1,4 @@
-package coop.rchain.models
+package coop.rchain.models.protobuf
 
 import com.google.protobuf.ByteString
 import scalapb.TypeMapper

@@ -5,6 +5,7 @@ import cats.mtl.implicits._
 import cats.{Eval => _}
 import com.google.protobuf.ByteString
 import coop.rchain.catscontrib.MonadError_._
+import coop.rchain.models
 import coop.rchain.models.Connective.ConnectiveInstance._
 import coop.rchain.models.Expr.ExprInstance._
 import coop.rchain.models.Var.VarInstance._
@@ -103,7 +104,7 @@ class VarMatcherSpec extends AnyFlatSpec with Matchers with TimeLimits with Trip
     val target: Par = EList(List[Par](GString("add"), GInt(7), GInt(8)), BitSet())
     val pattern: Par =
       EList(List[Par](GString("add"), EVar(FreeVar(0)), EVar(FreeVar(1))), BitSet())
-        .withConnectiveUsed(true)
+        .copy(connectiveUsed = true)
     assertSpatialMatch(target, pattern, Some(Map[Int, Par](0 -> GInt(7), 1 -> GInt(8))))
   }
 
@@ -112,11 +113,11 @@ class VarMatcherSpec extends AnyFlatSpec with Matchers with TimeLimits with Trip
     // It matches both targets, but the first pattern only matches one of the lists.
     val target: Par = EList(List(GInt(7), GInt(9)), BitSet())
       .prepend(EList(List(GInt(7), GInt(8)), BitSet()), 0)
-    val pattern: Par = EList(List(EVar(FreeVar(0)).withConnectiveUsed(true), GInt(9)), BitSet())
-      .withConnectiveUsed(true)
+    val pattern: Par = EList(List(EVar(FreeVar(0)), GInt(9)), BitSet())
+      .copy(connectiveUsed = true)
       .prepend(
-        EList(List(GInt(7), EVar(FreeVar(1)).withConnectiveUsed(true)), BitSet())
-          .withConnectiveUsed(true),
+        EList(List(GInt(7), EVar(FreeVar(1))), BitSet())
+          .copy(connectiveUsed = true),
         depth = 1
       )
     assertSpatialMatch(target, pattern, Some(Map[Int, Par](0 -> GInt(7), 1 -> GInt(8))))
@@ -182,7 +183,7 @@ class VarMatcherSpec extends AnyFlatSpec with Matchers with TimeLimits with Trip
     // should yield:  Some(Map(0 -> 1 | 1))
     val target: Par = GInt(1).prepend(GInt(1), depth = 0)
     val pattern: Par =
-      EVar(FreeVar(1)).prepend(EVar(FreeVar(0)), depth = 0).withConnectiveUsed(true)
+      EVar(FreeVar(1)).prepend(EVar(FreeVar(0)), depth = 0).copy(connectiveUsed = true)
     val expectedResult = Some(Map[Int, Par](0 -> target))
     assertSpatialMatch(target, pattern, expectedResult)
   }
@@ -299,7 +300,7 @@ class VarMatcherSpec extends AnyFlatSpec with Matchers with TimeLimits with Trip
       Send(GPrivateBuilder("zero"), List(GInt(7), GPrivateBuilder("one")), false, BitSet())
     val pattern: Par =
       Send(EVar(FreeVar(0)), List(GInt(7), EVar(FreeVar(1))), false, BitSet(), true)
-        .withConnectiveUsed(true)
+        .copy(connectiveUsed = true)
     val expectedResult =
       Some(Map[Int, Par](0 -> GPrivateBuilder("zero"), 1 -> GPrivateBuilder("one")))
     assertSpatialMatch(sendTarget, pattern, expectedResult)
@@ -365,7 +366,7 @@ class VarMatcherSpec extends AnyFlatSpec with Matchers with TimeLimits with Trip
       New(
         2,
         Par()
-          .prepend(Send(GInt(7), Seq(EVar(FreeVar(0))), false).withConnectiveUsed(true))
+          .prepend(Send(GInt(7), Seq(EVar(FreeVar(0))), false).copy(connectiveUsed = true))
           .prepend(EVar(Wildcard(WildcardMsg())), 1)
       )
 
@@ -709,10 +710,12 @@ class VarMatcherSpec extends AnyFlatSpec with Matchers with TimeLimits with Trip
 
   "Matching negation" should "work" in {
     // @1!(2) | @2!(3) | @3!(4)
-    val target: Par = Par().addSends(
-      Send(GInt(1), Seq(GInt(2)), persistent = false),
-      Send(GInt(2), Seq(GInt(3)), persistent = false),
-      Send(GInt(3), Seq(GInt(4)), persistent = false)
+    val target: Par = Par(
+      sends = Seq(
+        Send(GInt(1), Seq(GInt(2)), persistent = false),
+        Send(GInt(2), Seq(GInt(3)), persistent = false),
+        Send(GInt(3), Seq(GInt(4)), persistent = false)
+      )
     )
     // ~Nil
     val pattern: Connective = Connective(ConnNotBody(Par()))
@@ -724,31 +727,37 @@ class VarMatcherSpec extends AnyFlatSpec with Matchers with TimeLimits with Trip
     assertSpatialMatch(target, patternPar, expectedResult)
 
     // ~Nil | ~Nil
-    val doublePatternPar = patternPar.addConnectives(pattern)
+    val doublePatternPar = patternPar.copy(connectives = patternPar.connectives :+ pattern)
     assertSpatialMatch(target, doublePatternPar, expectedResult)
 
     // ~Nil | ~Nil | ~Nil
-    val triplePatternPar = doublePatternPar.addConnectives(pattern)
+    val triplePatternPar =
+      doublePatternPar.copy(connectives = doublePatternPar.connectives :+ pattern)
     assertSpatialMatch(target, triplePatternPar, expectedResult)
 
     // ~Nil | ~Nil | ~Nil | ~Nil
     // Fails because there is no way to split 3 sends into 4 non nil terms.
-    val quadruplePatternPar = triplePatternPar.addConnectives(pattern)
+    val quadruplePatternPar =
+      triplePatternPar.copy(connectives = triplePatternPar.connectives :+ pattern)
     assertSpatialMatch(target, quadruplePatternPar, None)
   }
 
   "Matching a complicated connective" should "work" in {
     // @1!(6) | @2!(7) | @3!(8)
-    val target: Par = Par().addSends(
-      Send(GInt(1), Seq(GInt(6)), persistent = false),
-      Send(GInt(2), Seq(GInt(7)), persistent = false),
-      Send(GInt(3), Seq(GInt(8)), persistent = false)
+    val target: Par = Par(
+      sends = Seq(
+        Send(GInt(1), Seq(GInt(6)), persistent = false),
+        Send(GInt(2), Seq(GInt(7)), persistent = false),
+        Send(GInt(3), Seq(GInt(8)), persistent = false)
+      )
     )
 
-    val failTarget: Par = Par().addSends(
-      Send(GInt(1), Seq(GInt(6)), persistent = false),
-      Send(GInt(2), Seq(GInt(9)), persistent = false),
-      Send(GInt(3), Seq(GInt(8)), persistent = false)
+    val failTarget: Par = Par(
+      sends = Seq(
+        Send(GInt(1), Seq(GInt(6)), persistent = false),
+        Send(GInt(2), Seq(GInt(9)), persistent = false),
+        Send(GInt(3), Seq(GInt(8)), persistent = false)
+      )
     )
 
     // ~Nil
@@ -758,9 +767,7 @@ class VarMatcherSpec extends AnyFlatSpec with Matchers with TimeLimits with Trip
     // ~{ ~Nil | ~Nil }
     val singleFactor: Connective = Connective(
       ConnNotBody(
-        Par()
-          .addConnectives(nonNullConn, nonNullConn)
-          .withConnectiveUsed(true)
+        Par(connectives = Seq(nonNullConn, nonNullConn), connectiveUsed = true)
       )
     )
     // x /\ y!(7)
@@ -768,14 +775,14 @@ class VarMatcherSpec extends AnyFlatSpec with Matchers with TimeLimits with Trip
       Connective(
         ConnAndBody(
           ConnectiveBody(
-            Seq(EVar(FreeVar(0)), Send(EVar(FreeVar(1)), Seq(GInt(7))).withConnectiveUsed(true))
+            Seq(EVar(FreeVar(0)), Send(EVar(FreeVar(1)), Seq(GInt(7))).copy(connectiveUsed = true))
           )
         )
       )
     // ~{ ~Nil | ~Nil } & ~Nil
     val prime: Connective = Connective(
       ConnAndBody(
-        ConnectiveBody(Seq(nonNull, Par().addConnectives(singleFactor).withConnectiveUsed(true)))
+        ConnectiveBody(Seq(nonNull, Par(connectives = Seq(singleFactor), connectiveUsed = true)))
       )
     )
     // x!(7) \/ x!(8)
@@ -783,14 +790,14 @@ class VarMatcherSpec extends AnyFlatSpec with Matchers with TimeLimits with Trip
       ConnOrBody(
         ConnectiveBody(
           Seq(
-            Send(EVar(FreeVar(0)), Seq(GInt(7))).withConnectiveUsed(true),
-            Send(EVar(FreeVar(0)), Seq(GInt(8))).withConnectiveUsed(true)
+            Send(EVar(FreeVar(0)), Seq(GInt(7))).copy(connectiveUsed = true),
+            Send(EVar(FreeVar(0)), Seq(GInt(8))).copy(connectiveUsed = true)
           )
         )
       )
     )
     // x /\ y!(7) | ~{ ~Nil | ~Nil } & ~Nil | x!(7) \/ x!(8)
-    val pattern: Par   = Par().addConnectives(capture, prime, alternative).withConnectiveUsed(true)
+    val pattern: Par   = Par(connectives = Seq(capture, prime, alternative), connectiveUsed = true)
     val expectedResult = Some(Map[Int, Par](0 -> Send(GInt(2), Seq(GInt(7))), 1 -> GInt(2)))
     assertSpatialMatch(target, pattern, expectedResult)
 

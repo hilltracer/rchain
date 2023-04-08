@@ -251,7 +251,7 @@ private[sorter] object ExprSortMatcher extends Sortable[Expr] {
           sortedPars          <- tuple.ps.toList.traverse(Sortable[Par].sortMatch[F])
           connectiveUsedScore = if (tuple.connectiveUsed) 1L else 0L
         } yield ScoredTerm(
-          ETupleBody(tuple.withPs(sortedPars.map(_.term))),
+          ETupleBody(tuple.copy(ps = sortedPars.map(_.term))),
           Node(
             Seq(Leaf(Score.ETUPLE)) ++ sortedPars.map(_.score) ++ Seq(Leaf(connectiveUsedScore))
           )
@@ -262,7 +262,7 @@ private[sorter] object ExprSortMatcher extends Sortable[Expr] {
           sortedTarget        <- Sortable.sortMatch(em.target)
           connectiveUsedScore = if (em.connectiveUsed) 1L else 0L
         } yield constructExpr(
-          EMethodBody(em.withArguments(args.map(_.term)).withTarget(sortedTarget.term)),
+          EMethodBody(em.copy(arguments = args.map(_.term)).copy(target = sortedTarget.term)),
           Node(
             Seq(Leaf(Score.EMETHOD), Leaf(em.methodName), sortedTarget.score) ++ args
               .map(_.score) ++ Seq(Leaf(connectiveUsedScore))

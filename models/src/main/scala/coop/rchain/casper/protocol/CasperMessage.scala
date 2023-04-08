@@ -6,15 +6,15 @@ import coop.rchain.casper.PrettyPrinter
 import coop.rchain.crypto.PublicKey
 import coop.rchain.crypto.signatures.{SignaturesAlg, Signed}
 import coop.rchain.models.BlockHash.BlockHash
-import coop.rchain.models.PCost
+import coop.rchain.models.{PCost, ProtoBindings}
 import coop.rchain.models.syntax._
 import coop.rchain.models.Validator.Validator
 import coop.rchain.models.block.StateHash.StateHash
 import coop.rchain.rspace.hashing.Blake2b256Hash
 import coop.rchain.rspace.state.RSpaceExporter
 import coop.rchain.shared.Serialize
+import coop.rchain.models.ProtoBindings._
 import scodec.bits.ByteVector
-
 sealed trait CasperMessage {
   def toProto: CasperMessageProto
 }
@@ -240,7 +240,7 @@ object ProcessedDeploy {
       deployLog <- pd.deployLog.toList.traverse(Event.from)
     } yield ProcessedDeploy(
       dd,
-      pd.cost,
+      fromProto(pd.cost),
       deployLog,
       pd.errored,
       if (pd.systemDeployError.isEmpty()) None else Some(pd.systemDeployError)
@@ -249,7 +249,7 @@ object ProcessedDeploy {
   def toProto(pd: ProcessedDeploy): ProcessedDeployProto = {
     val proto = ProcessedDeployProto()
       .withDeploy(DeployData.toProto(pd.deploy))
-      .withCost(pd.cost)
+      .withCost(ProtoBindings.toProto(pd.cost))
       .withDeployLog(pd.deployLog.map(Event.toProto))
       .withErrored(pd.isFailed)
 

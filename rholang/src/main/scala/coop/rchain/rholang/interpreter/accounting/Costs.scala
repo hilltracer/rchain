@@ -1,6 +1,7 @@
 package coop.rchain.rholang.interpreter.accounting
 
 import com.google.protobuf.ByteString
+import coop.rchain.models.ProtoBindings.toProto
 import coop.rchain.models.TaggedContinuation.TaggedCont.ParBody
 import coop.rchain.models.{
   BindPattern,
@@ -9,6 +10,7 @@ import coop.rchain.models.{
   Par,
   ParWithRandom,
   ProtoM,
+  RhoType,
   StacksafeMessage,
   TaggedContinuation
 }
@@ -42,9 +44,10 @@ trait Costs {
   final val SUM_COST: Cost         = Cost(3, "sum")
   final val SUBTRACTION_COST: Cost = Cost(3, "subtraction")
 
-  def equalityCheckCost[T <: StacksafeMessage[_], P <: StacksafeMessage[_]](x: T, y: P): Cost =
+  def equalityCheckCost[T <: RhoType, P <: RhoType](x: T, y: P): Cost =
     Cost(
-      scala.math.min(ProtoM.serializedSize(x).value, ProtoM.serializedSize(y).value),
+      scala.math
+        .min(ProtoM.serializedSize(toProto(x)).value, ProtoM.serializedSize(toProto(y)).value),
       "equality check"
     )
 
@@ -91,8 +94,8 @@ trait Costs {
   // serializing any Par into a Array[Byte]:
   // + allocates byte array of the same size as `serializedSize`
   // + then it copies all elements of the Par
-  def toByteArrayCost[T <: StacksafeMessage[_]](a: T): Cost =
-    Cost(ProtoM.serializedSize(a).value, "to byte array")
+  def toByteArrayCost[T <: RhoType](a: T): Cost =
+    Cost(ProtoM.serializedSize(toProto(a)).value, "to byte array")
 
   // Converting rholang BigInt, String into a GInt.
   // The cost is estimated as the number of bytes in converted data.
@@ -181,8 +184,8 @@ trait Costs {
   def storageCostProduce(channel: Par, data: ListParWithRandom): Cost =
     storageCost(channel) + storageCost(data.pars: _*)
 
-  private def storageCost[A <: StacksafeMessage[_]](as: A*): Cost =
-    Cost(as.map(a => ProtoM.serializedSize(a).value).sum, "storage cost")
+  private def storageCost[A <: RhoType](as: A*): Cost =
+    Cost(as.map(a => ProtoM.serializedSize(toProto(a)).value).sum, "storage cost")
 
   def commEventStorageCost(channelsInvolved: Int): Cost = {
     val consumeCost  = eventStorageCost(channelsInvolved)

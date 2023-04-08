@@ -34,7 +34,9 @@ object StateBalances {
     val e                  = Par(exprs = Seq(Expr(ETupleBody(ETuple(Seq(revVaultUnf, extractStateString))))))
     for {
       c <- runtime.getContinuation(Seq(e))
-      unf = c.head.continuation.taggedCont.parBody.get.body.sends.head.data.head.exprs.head.getEMapBody.ps
+      unf = c.head.continuation.taggedCont.parBody.get.body.sends.head.data.head.exprs.head.exprInstance.eMapBody
+        .getOrElse(ParMap(Seq()))
+        .ps
         .get(Par(exprs = Seq(Expr(GString("vaultMap")))))
         .get
     } yield unf

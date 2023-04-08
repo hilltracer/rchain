@@ -25,7 +25,7 @@ object RSpaceUtil {
       implicit runtimeManager: RuntimeManager[F]
   ) = {
     val name = channel.unsafeHexToByteString
-    getDataAt[F](block.postStateHash, GPrivate().withId(name))
+    getDataAt[F](block.postStateHash, GPrivate().copy(id = name))
   }
 
   def getDataAt[F[_]: FlatMap](hash: ByteString, channel: Par)(

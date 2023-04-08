@@ -32,10 +32,12 @@ import coop.rchain.crypto.signatures.{Secp256k1, Signed}
 import coop.rchain.metrics.implicits._
 import coop.rchain.metrics.{Metrics, Span}
 import coop.rchain.models.Expr.ExprInstance.EVarBody
+import coop.rchain.models.ProtoBindings.toProto
 import coop.rchain.models.Validator.Validator
 import coop.rchain.models.Var.VarInstance.FreeVar
 import coop.rchain.models._
 import coop.rchain.models.block.StateHash.StateHash
+import coop.rchain.models.protobuf.ParProto
 import coop.rchain.models.rholang.RhoType.RhoName
 import coop.rchain.models.syntax.modelsSyntaxByteString
 import coop.rchain.rholang.interpreter.RhoRuntime.bootstrapRegistry
@@ -609,14 +611,14 @@ final class RuntimeOps[F[_]](private val runtime: RhoRuntime[F]) extends AnyVal 
        """.stripMargin('#')
 
   private def toValidatorSeq(validatorsPar: Par): Seq[Validator] =
-    validatorsPar.exprs.head.getESetBody.ps.map { validator =>
+    toProto(validatorsPar.exprs.head).getESetBody.ps.map { validator => // TODO: Delete proto
       assert(validator.exprs.length == 1, "Validator in bonds map wasn't a single string.")
       validator.exprs.head.getGByteArray
     }.toList
 
   private def toBondMap(bondsMap: Par): Map[Validator, Long] =
-    bondsMap.exprs.head.getEMapBody.ps.map {
-      case (validator: Par, bond: Par) =>
+    toProto(bondsMap.exprs.head).getEMapBody.ps.map { // TODO: Delete proto
+      case (validator: ParProto, bond: ParProto) =>
         assert(validator.exprs.length == 1, "Validator in bonds map wasn't a single string.")
         assert(bond.exprs.length == 1, "Stake in bonds map wasn't a single integer.")
         val validatorName = validator.exprs.head.getGByteArray

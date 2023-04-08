@@ -25,6 +25,8 @@ import coop.rchain.rspace.util.unpackOptionWithPeek
 import coop.rchain.shared.{Base16, Serialize}
 import monix.eval.Coeval
 import scalapb.GeneratedMessage
+import coop.rchain.models.ProtoBindings
+import coop.rchain.models.protobuf.ParProto
 
 import scala.collection.SortedSet
 import scala.collection.immutable.BitSet
@@ -159,7 +161,7 @@ class DebruijnInterpreter[M[_]: Sync: Parallel: _cost](
   }
 
   private def isMergeableChannel(chan: Par) = {
-    val tupleElms = chan.exprs.flatMap(y => y.getETupleBody.ps)
+    val tupleElms = chan.exprs.flatMap(y => y.exprInstance.eTupleBody.getOrElse(ETuple()).ps)
     tupleElms.headOption.contains(mergeableTagName)
   }
 
@@ -172,7 +174,7 @@ class DebruijnInterpreter[M[_]: Sync: Parallel: _cost](
       implicit env: Env[Par],
       rand: Blake2b512Random
   ): M[Unit] = {
-    val terms: Seq[GeneratedMessage] = Seq(
+    val terms: Seq[RhoType] = Seq(
       par.sends,
       par.receives,
       par.news,
@@ -246,7 +248,7 @@ class DebruijnInterpreter[M[_]: Sync: Parallel: _cost](
   }
 
   private def eval(
-      term: GeneratedMessage
+      term: RhoType
   )(implicit env: Env[Par], rand: Blake2b512Random): M[Unit] =
     term match {
       case term: Send    => eval(term)
@@ -924,7 +926,7 @@ class DebruijnInterpreter[M[_]: Sync: Parallel: _cost](
 
     def serialize(p: Par): Either[ReduceError, Array[Byte]] =
       Either
-        .fromTry(Try(Serialize[Par].encode(p).toArray))
+        .fromTry(Try(Serialize[ParProto].encode(ProtoBindings.toProto(p)).toArray)) // TODO: Hide ParProto type
         .leftMap(th => ReduceError(s"Error: exception thrown when serializing $p." + th.getMessage))
 
     override def apply(p: Par, args: Seq[Par])(implicit env: Env[Par]): M[Par] =
@@ -1467,7 +1469,7 @@ class DebruijnInterpreter[M[_]: Sync: Parallel: _cost](
             (EList(
               ps.toSeq.map {
                 case (k, v) =>
-                  Par().withExprs(Seq(Expr(ETupleBody(ETuple(Seq(k, v))))))
+                  Par().copy(exprs = Seq(ETuple(Seq(k, v))))
               }
             ): Par).pure[M]
         case ETupleBody(ETuple(ps, _, _)) =>

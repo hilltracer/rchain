@@ -92,7 +92,7 @@ class RegistryUpdateSpec extends AnyFlatSpec with Matchers with Inspectors {
         _       = assert(b1.state.deploys.head.cost.cost > 0L, s"$b1 deploy cost is 0L")
         _       = assert(b1.state.deploys.head.systemDeployError.isEmpty, s"$b1 system deploy failed")
         _       = assert(!b1.state.deploys.head.isFailed, s"$b1 deploy failed")
-        balance = ret.head.exprs.head.getGInt
+        balance = ret.head.exprs.head.exprInstance.gInt.getOrElse(0L)
         b2 <- node
                .addBlock(
                  ConstructDeploy
@@ -102,9 +102,11 @@ class RegistryUpdateSpec extends AnyFlatSpec with Matchers with Inspectors {
         _    = assert(b2.state.deploys.head.cost.cost > 0L, s"$b2 deploy cost is 0L")
         _    = assert(b2.state.deploys.head.systemDeployError.isEmpty, s"$b2 system deploy failed")
         _    = assert(!b2.state.deploys.head.isFailed, s"$b2 deploy failed")
-        _    = assert(ret2.head.exprs.head.getGInt == balance + transferAmount.toLong)
+        _ = assert(
+          ret2.head.exprs.head.exprInstance.gInt.getOrElse(0L) == balance + transferAmount.toLong
+        )
         ret3 <- rm.playExploratoryDeploy(exploreUpdateResultTerm, b2.postStateHash)
-        _    = assert(ret3.head.exprs.head.getGString == "hello")
+        _    = assert(ret3.head.exprs.head.exprInstance.gString.getOrElse("") == "hello")
       } yield ()
     }
   }

@@ -212,7 +212,7 @@ object SystemProcesses {
         case isContractCall(produce, Seq(arg, ack)) =>
           for {
             _ <- printStdOut(prettyPrinter.buildString(arg))
-            _ <- produce(Seq(Par.defaultInstance), ack)
+            _ <- produce(Seq(Par()), ack)
           } yield ()
       }
 
@@ -225,7 +225,7 @@ object SystemProcesses {
         case isContractCall(produce, Seq(arg, ack)) =>
           for {
             _ <- printStdErr(prettyPrinter.buildString(arg))
-            _ <- produce(Seq(Par.defaultInstance), ack)
+            _ <- produce(Seq(Par()), ack)
           } yield ()
       }
 

@@ -1,6 +1,7 @@
 package coop.rchain.node.revvaultexport
 
 import cats.effect.Concurrent
+import com.google.protobuf.ByteString
 import coop.rchain.casper.genesis.contracts.{Registry, StandardDeploys}
 import coop.rchain.casper.helper.TestNode.Effect
 import coop.rchain.casper.helper.TestRhoRuntime.rhoRuntimeEff
@@ -101,12 +102,19 @@ class RhoTrieTraverserTest extends AnyFlatSpec {
           maps          <- RhoTrieTraverser.traverseTrie(trieDepth, trieMapHandle, storeToken, runtime)
           goodMap = RhoTrieTraverser.vecParMapToMap(
             maps,
-            p => p.exprs.head.getGByteArray,
-            p => p.exprs.head.getGInt
+            p => p.exprs.head.exprInstance.gByteArray.getOrElse(ByteString.EMPTY),
+            p => p.exprs.head.exprInstance.gInt.getOrElse(0L)
           )
           _ = insertKeyValues.map(k => {
             val key =
-              RhoTrieTraverser.keccakKey(k._1).exprs.head.getGByteArray.substring(trieDepth, 32)
+              RhoTrieTraverser
+                .keccakKey(k._1)
+                .exprs
+                .head
+                .exprInstance
+                .gByteArray
+                .getOrElse(ByteString.EMPTY)
+                .substring(trieDepth, 32)
             assert(goodMap(key) == k._2.toLong)
           })
         } yield ()

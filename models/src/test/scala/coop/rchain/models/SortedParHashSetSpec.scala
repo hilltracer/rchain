@@ -1,11 +1,12 @@
 package coop.rchain.models
 
 import java.util
-
 import com.google.protobuf.ByteString
 import coop.rchain.models.Assertions.assertEqual
 import coop.rchain.models.Expr.ExprInstance._
+import coop.rchain.models.ProtoBindings.toProto
 import coop.rchain.models.Var.VarInstance.BoundVar
+import coop.rchain.models.protobuf.ESetProto
 import coop.rchain.models.rholang.implicits._
 import coop.rchain.models.rholang.sorter.Sortable
 import coop.rchain.models.rholang.sorter.ordering._
@@ -23,12 +24,12 @@ class SortedParHashSetSpec extends AnyFlatSpec with ScalaCheckPropertyChecks wit
 
   val pars: Seq[Par] = {
     val parGround =
-      Par().withExprs(Seq(GInt(2), GInt(1), GInt(-1), GInt(-2), GInt(0)))
+      Par(exprs = Seq(GInt(2), GInt(1), GInt(-1), GInt(-2), GInt(0)))
     val parExpr: Par =
       EPlus(EPlus(GInt(1), GInt(3)), GInt(2))
     val parMethods =
-      Par().withExprs(
-        List(
+      Par(
+        exprs = List(
           EMethod("nth", EVar(BoundVar(2)), List(GInt(1)), locallyFree = BitSet(2)),
           EMethod("nth", EVar(BoundVar(2)), List(GInt(1)), locallyFree = BitSet(2)),
           EMethod("nth", EVar(BoundVar(2)), List(GInt(2), GInt(3)), locallyFree = BitSet(2)),
@@ -42,11 +43,12 @@ class SortedParHashSetSpec extends AnyFlatSpec with ScalaCheckPropertyChecks wit
   def sample = SortedParHashSet(pars)
 
   private[this] def roundtripTest(parTreeSet: SortedParHashSet): Assertion =
-    ESet.parseFrom(serializeESet(parTreeSet)) should ===(ESet(ps = parTreeSet.sortedPars))
-
+    ESetProto.parseFrom(serializeESet(parTreeSet)) should ===(
+      ProtoBindings.toProto(ESet(ps = parTreeSet.sortedPars))
+    )
   // toByteArray method is using the same method calls as real protobuf's serialization
   private[this] def serializeESet(parTreeSet: SortedParHashSet): Array[Byte] =
-    ESet(ps = parTreeSet.sortedPars).toByteArray
+    toProto(ESet(ps = parTreeSet.sortedPars)).toByteArray
 
   "SortedParHashSet" should "preserve structure during round trip protobuf serialization" in {
     roundtripTest(sample)

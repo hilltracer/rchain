@@ -10,6 +10,7 @@ import coop.rchain.models.either.implicits._
 import coop.rchain.monix.Monixable
 import coop.rchain.shared.syntax._
 import io.grpc.{ManagedChannel, ManagedChannelBuilder}
+import coop.rchain.models.ProtoBindings.fromProto
 
 import java.io.Closeable
 import java.util.concurrent.TimeUnit
@@ -164,7 +165,7 @@ class GrpcDeployService[F[_]: Monixable: Sync](host: String, port: Int, maxMessa
       .fromTask
       .toEitherF(
         _.message.error,
-        _.message.payload.map(r => (r.par, r.block))
+        _.message.payload.map(r => (r.par.map(fromProto), r.block))
       )
 
   def lastFinalizedBlock: F[Either[Seq[String], String]] =

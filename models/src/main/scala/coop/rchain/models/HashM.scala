@@ -8,7 +8,8 @@ import coop.rchain.casper.protocol._
 import coop.rchain.casper.protocol.deploy.v1
 import coop.rchain.crypto.hash.Blake2b512Random
 import coop.rchain.crypto.signatures.Signed
-import coop.rchain.models.Expr.ExprInstance.{GBigInt, GInt}
+import coop.rchain.models.protobuf.ExprProto.ExprInstance.{GBigInt, GInt}
+import coop.rchain.models.protobuf._
 
 import java.util.Objects
 import scala.collection.immutable.BitSet
@@ -97,15 +98,15 @@ object HashM extends HashMDerivation {
 
   }
 
-  implicit val Env: HashM[Map[String, Par]] = opaqueHash
-  implicit val ParHash: HashM[Par]          = gen[Par]
-  implicit val ExprHash                     = gen[Expr]
-  implicit val VarHash                      = gen[Var]
-  implicit val SendHash                     = gen[Send]
-  implicit val ReceiveHash                  = gen[Receive]
-  implicit val ReceiveBindHash              = gen[ReceiveBind]
-  implicit val NewHash                      = gen[New]
-  implicit val MatchHash                    = gen[Match]
+  implicit val Env: HashM[Map[String, ParProto]] = opaqueHash
+  implicit val ParHash: HashM[ParProto]          = gen[ParProto]
+  implicit val ExprHash                          = gen[ExprProto]
+  implicit val VarHash                           = gen[VarProto]
+  implicit val SendHash                          = gen[SendProto]
+  implicit val ReceiveHash                       = gen[ReceiveProto]
+  implicit val ReceiveBindHash                   = gen[ReceiveBindProto]
+  implicit val NewHash                           = gen[NewProto]
+  implicit val MatchHash                         = gen[MatchProto]
   implicit def SignedHash[A: HashM] = new HashM[Signed[A]] {
     override def hash[F[_]: Sync](value: Signed[A]): F[Int] =
       HashM[A]
@@ -116,31 +117,33 @@ object HashM extends HashMDerivation {
   implicit val GIntHash    = gen[GInt] //This is only possible to derive here, b/c LongHashM is private
   implicit val GBigIntHash = gen[GBigInt]
 
-  implicit val ConnectiveHash = gen[Connective]
+  implicit val ConnectiveHash = gen[ConnectiveProto]
 
-  implicit val ESetHash = gen[ESet]
-  implicit val EMapHash = gen[EMap]
+  implicit val ESetHash = gen[ESetProto]
+  implicit val EMapHash = gen[EMapProto]
 
-  implicit val SortedParHashSetHash: HashM[SortedParHashSet] = seqHash[Par].contramap(_.sortedPars)
-  implicit val SortedParMapHash: HashM[SortedParMap]         = seqHash[(Par, Par)].contramap(_.sortedList)
+  implicit val SortedParHashSetHash: HashM[SortedParHashSetProto] =
+    seqHash[ParProto].contramap(_.sortedPars)
+  implicit val SortedParMapHash: HashM[SortedParMapProto] =
+    seqHash[(ParProto, ParProto)].contramap(_.sortedList)
 
-  implicit val parSetHash: HashM[ParSet] = new HashM[ParSet] {
+  implicit val parSetHash: HashM[ParSetProto] = new HashM[ParSetProto] {
 
-    override def hash[F[_]: Sync](parSet: ParSet): F[Int] =
+    override def hash[F[_]: Sync](parSet: ParSetProto): F[Int] =
       for {
-        psHash             <- HashM[SortedParHashSet].hash(parSet.ps)
-        remainderHash      <- HashM[Option[Var]].hash(parSet.remainder)
+        psHash             <- HashM[SortedParHashSetProto].hash(parSet.ps)
+        remainderHash      <- HashM[Option[VarProto]].hash(parSet.remainder)
         connectiveUsedHash <- HashM[Boolean].hash(parSet.connectiveUsed)
       } yield Objects.hash(Int.box(psHash), Int.box(remainderHash), Int.box(connectiveUsedHash))
 
   }
 
-  implicit val parMapHash: HashM[ParMap] = new HashM[ParMap] {
+  implicit val parMapHash: HashM[ParMapProto] = new HashM[ParMapProto] {
 
-    override def hash[F[_]: Sync](parMap: ParMap): F[Int] =
+    override def hash[F[_]: Sync](parMap: ParMapProto): F[Int] =
       for {
-        psHash             <- HashM[SortedParMap].hash(parMap.ps)
-        remainderHash      <- HashM[Option[Var]].hash(parMap.remainder)
+        psHash             <- HashM[SortedParMapProto].hash(parMap.ps)
+        remainderHash      <- HashM[Option[VarProto]].hash(parMap.remainder)
         connectiveUsedHash <- HashM[Boolean].hash(parMap.connectiveUsed)
       } yield Objects.hash(Int.box(psHash), Int.box(remainderHash), Int.box(connectiveUsedHash))
 
@@ -165,11 +168,11 @@ object HashM extends HashMDerivation {
   implicit val ProcessedDeployHash       = gen[ProcessedDeployProto]
   implicit val ProcessedSystemDeployHash = gen[ProcessedSystemDeployProto]
   implicit val ReportConsumeProto        = gen[ReportConsumeProto]
-  implicit val bindPattern               = gen[BindPattern]
-  implicit val parWithRandom             = gen[ParWithRandom]
+  implicit val bindPattern               = gen[BindPatternProto]
+  implicit val parWithRandom             = gen[ParWithRandomProto]
 
-  implicit val PCostHash              = gen[PCost]
-  implicit val TaggedContinuationHash = gen[TaggedContinuation]
+  implicit val PCostHash              = gen[PCostProto]
+  implicit val TaggedContinuationHash = gen[TaggedContinuationProto]
 
   // deploy service V1
   implicit val ContinuationAtNamePayloadV2Hash  = gen[v1.ContinuationAtNamePayload]

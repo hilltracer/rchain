@@ -1,10 +1,10 @@
 package coop.rchain.models
 
 import java.util.Objects
-
 import com.google.protobuf.ByteString
-import coop.rchain.models.Expr.ExprInstance.GInt
-import coop.rchain.models.testImplicits._
+import coop.rchain.models.protobuf.ExprProto.ExprInstance.GInt
+import coop.rchain.models.protobuf.testImplicitsProto._
+import coop.rchain.models.protobuf._
 import monix.eval.Coeval
 import org.scalacheck.Arbitrary
 import org.scalatest.Assertion
@@ -23,40 +23,40 @@ class HashMSpec extends AnyFlatSpec with ScalaCheckPropertyChecks with Matchers 
 
   behavior of "HashM"
 
-  sameResultAsReference[Par]
-  sameResultAsReference[Expr]
-  sameResultAsReference[BindPattern]
-  sameResultAsReference[Bundle]
-  sameResultAsReference[Connective]
-  sameResultAsReference[ConnectiveBody]
-  sameResultAsReference[EList]
-  sameResultAsReference[EMap]
-  sameResultAsReference[EMatches]
-  sameResultAsReference[EMethod]
-  sameResultAsReference[ENeq]
-  sameResultAsReference[ENot]
-  sameResultAsReference[EOr]
-  sameResultAsReference[ESet]
-  sameResultAsReference[ETuple]
-  sameResultAsReference[EVar]
-  sameResultAsReference[GUnforgeable]
-  sameResultAsReference[GPrivate]
-  sameResultAsReference[GDeployerId]
-  sameResultAsReference[KeyValuePair]
-  sameResultAsReference[ListBindPatterns]
-  sameResultAsReference[Match]
-  sameResultAsReference[MatchCase]
-  sameResultAsReference[New]
-  sameResultAsReference[ParWithRandom]
-  sameResultAsReference[PCost]
-  sameResultAsReference[Receive]
-  sameResultAsReference[ReceiveBind]
-  sameResultAsReference[Send]
-  sameResultAsReference[TaggedContinuation]
-  sameResultAsReference[Var]
-  sameResultAsReference[VarRef]
-  sameResultAsReference[ParSet]
-  sameResultAsReference[ParMap]
+  sameResultAsReference[ParProto]
+  sameResultAsReference[ExprProto]
+  sameResultAsReference[BindPatternProto]
+  sameResultAsReference[BundleProto]
+  sameResultAsReference[ConnectiveProto]
+  sameResultAsReference[ConnectiveBodyProto]
+  sameResultAsReference[EListProto]
+  sameResultAsReference[EMapProto]
+  sameResultAsReference[EMatchesProto]
+  sameResultAsReference[EMethodProto]
+  sameResultAsReference[ENeqProto]
+  sameResultAsReference[ENotProto]
+  sameResultAsReference[EOrProto]
+  sameResultAsReference[ESetProto]
+  sameResultAsReference[ETupleProto]
+  sameResultAsReference[EVarProto]
+  sameResultAsReference[GUnforgeableProto]
+  sameResultAsReference[GPrivateProto]
+  sameResultAsReference[GDeployerIdProto]
+  sameResultAsReference[KeyValuePairProto]
+  sameResultAsReference[ListBindPatternsProto]
+  sameResultAsReference[MatchProto]
+  sameResultAsReference[MatchCaseProto]
+  sameResultAsReference[NewProto]
+  sameResultAsReference[ParWithRandomProto]
+  sameResultAsReference[PCostProto]
+  sameResultAsReference[ReceiveProto]
+  sameResultAsReference[ReceiveBindProto]
+  sameResultAsReference[SendProto]
+  sameResultAsReference[TaggedContinuationProto]
+  sameResultAsReference[VarProto]
+  sameResultAsReference[VarRefProto]
+  sameResultAsReference[ParSetProto]
+  sameResultAsReference[ParMapProto]
 
   assertTypeError("sameResultAsReference[Long]") //see the private instance in HashM
   sameResultAsReference[String]
@@ -65,12 +65,12 @@ class HashMSpec extends AnyFlatSpec with ScalaCheckPropertyChecks with Matchers 
   sameResultAsReference[BitSet]
   sameResultAsReference[AlwaysEqual[BitSet]]
 
-  sameResultAsReference[SortedParHashSet]
-  sameResultAsReference[SortedParMap]
+  sameResultAsReference[SortedParHashSetProto]
+  sameResultAsReference[SortedParMapProto]
 
   //fixed regressions / corner cases:
   sameResultAsReference(GInt(-1))
-  sameResultAsReference(Expr(GInt(-1)))
+  sameResultAsReference(ExprProto(GInt(-1)))
 
   def sameResultAsReference[A <: Any: HashM: Arbitrary: Pretty](implicit tag: ClassTag[A]): Unit =
     it must s"provide same results as hashCode for ${tag.runtimeClass.getSimpleName}" in {
@@ -85,8 +85,8 @@ class HashMSpec extends AnyFlatSpec with ScalaCheckPropertyChecks with Matchers 
     // and hard-code the current definition for the handmade AST classes.
     val reference = a match {
       //FIXME this should delegate to reference
-      case x: ParSet          => Objects.hash(x.ps, x.remainder, Boolean.box(x.connectiveUsed))
-      case x: ParMap          => Objects.hash(x.ps, x.remainder, Boolean.box(x.connectiveUsed))
+      case x: ParSetProto     => Objects.hash(x.ps, x.remainder, Boolean.box(x.connectiveUsed))
+      case x: ParMapProto     => Objects.hash(x.ps, x.remainder, Boolean.box(x.connectiveUsed))
       case caseClass: Product => ScalaRunTime._hashCode(caseClass)
       case _                  => a.hashCode()
     }

@@ -4,6 +4,7 @@ import cats._
 import cats.effect.{Concurrent, Sync}
 import cats.syntax.all._
 import coop.rchain.metrics.{Metrics, NoopSpan, Span}
+import coop.rchain.models.ProtoBindings.toProto
 import coop.rchain.models._
 import coop.rchain.rholang.interpreter.accounting._
 import coop.rchain.rholang.interpreter.compiler.Compiler
@@ -251,7 +252,7 @@ object RholangCLI {
     val compiledFileName = fileName.replaceAll(".rho$", "") + ".rhoc"
     Try({
       new java.io.PrintWriter(compiledFileName) {
-        write(sortedTerm.toProtoString)
+        write(toProto(sortedTerm).toProtoString)
         close()
       }
       println(s"Compiled $fileName to $compiledFileName")
@@ -262,7 +263,7 @@ object RholangCLI {
     val binaryFileName = fileName.replaceAll(".rho$", "") + ".bin"
     Try({
       val output = new BufferedOutputStream(new FileOutputStream(binaryFileName))
-      output.write(sortedTerm.toByteString.toByteArray)
+      output.write(toProto(sortedTerm).toByteString.toByteArray)
       output.close()
       println(s"Compiled $fileName to $binaryFileName")
     })

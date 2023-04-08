@@ -32,7 +32,7 @@ class ShortCircuitBooleanSpec extends AnyWordSpec with Matchers {
           result <- if (evalResult.errors.isEmpty)
                      for {
                        data       <- runtime.getData(GString(outcomeCh)).map(_.head)
-                       boolResult = data.a.pars.head.exprs.head.getGBool
+                       boolResult = data.a.pars.head.exprs.head.exprInstance.gBool.getOrElse(false)
                      } yield Right(boolResult)
                    else Task.pure(Left(evalResult.errors.head))
         } yield result
