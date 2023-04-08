@@ -107,10 +107,7 @@ object CollectionNormalizeMatcher {
               val constructor: Option[Var] => (Seq[Par], AlwaysEqual[BitSet], Boolean) => EList =
                 optionalRemainder =>
                   (ps, lf, cu) => {
-                    val tmpEList = EList(ps, lf, cu, optionalRemainder)
-                    tmpEList.withConnectiveUsed(
-                      tmpEList.connectiveUsed || optionalRemainder.isDefined
-                    )
+                    EList(ps, lf, cu || optionalRemainder.isDefined, optionalRemainder)
                   }
 
               foldMatch(knownFree, cl.listproc_.toList, constructor(optionalRemainder))

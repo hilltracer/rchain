@@ -7,6 +7,7 @@ import coop.rchain.casper.protocol.{
   ReportEventProto,
   ReportProduceProto
 }
+import coop.rchain.models.ProtoBindings.toProto
 import coop.rchain.models.{BindPattern, ListParWithRandom, Par, TaggedContinuation}
 import coop.rchain.rspace.{ReportingRspace, ReportingTransformer}
 
@@ -22,13 +23,13 @@ class ReportingProtoTransformer
       rc: RhoReportingConsume
   ): ReportConsumeProto =
     ReportConsumeProto(
-      rc.channels,
-      rc.patterns,
+      rc.channels.map(toProto),
+      rc.patterns.map(toProto),
       rc.peeks.map(PeekProto(_))
     )
 
   override def serializeProduce(rp: RhoReportingProduce): ReportProduceProto =
-    ReportProduceProto(channel = rp.channel, data = rp.data)
+    ReportProduceProto(channel = toProto(rp.channel), data = toProto(rp.data))
 
   override def serializeComm(rcm: RhoReportingComm): ReportCommProto =
     ReportCommProto(

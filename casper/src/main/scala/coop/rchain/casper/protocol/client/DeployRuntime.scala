@@ -11,6 +11,7 @@ import coop.rchain.catscontrib.ski.kp
 import coop.rchain.crypto.signatures.{Secp256k1, Signed}
 import coop.rchain.crypto.{PrivateKey, PublicKey}
 import coop.rchain.models.Par
+import coop.rchain.models.ProtoBindings.toProto
 import coop.rchain.models.syntax._
 import coop.rchain.shared.ThrowableOps._
 import coop.rchain.shared.Time
@@ -45,7 +46,7 @@ object DeployRuntime {
   ): F[Unit] =
     gracefulExit {
       listenAtNameUntilChanges(name) { par: Par =>
-        val request = DataAtNameQuery(Int.MaxValue, par)
+        val request = DataAtNameQuery(Int.MaxValue, toProto(par))
         EitherT(DeployService[F].listenForDataAtName(request))
       }.map(kp("")).value
     }
@@ -55,7 +56,7 @@ object DeployRuntime {
   ): F[Unit] =
     gracefulExit {
       listenAtNameUntilChanges(names) { pars: List[Par] =>
-        val request = ContinuationAtNameQuery(Int.MaxValue, pars)
+        val request = ContinuationAtNameQuery(Int.MaxValue, pars.map(toProto))
         EitherT(DeployService[F].listenForContinuationAtName(request))
       }.map(kp("")).value
     }

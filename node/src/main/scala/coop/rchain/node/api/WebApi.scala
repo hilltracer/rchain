@@ -9,6 +9,9 @@ import coop.rchain.casper.api.BlockApi
 import coop.rchain.casper.protocol.{BlockInfo, DataWithBlockInfo, DeployData, LightBlockInfo}
 import coop.rchain.crypto.PublicKey
 import coop.rchain.crypto.signatures.{SignaturesAlg, Signed}
+import coop.rchain.models.Expr.ExprInstance
+import coop.rchain.models.Expr.ExprInstance._
+import coop.rchain.models.ProtoBindings.fromProto
 import coop.rchain.models.rholang.RhoType._
 import coop.rchain.models.rholang.implicits.VectorPar
 import coop.rchain.models.syntax._
@@ -266,9 +269,9 @@ object WebApi {
 
   // RhoExpr from protobuf
 
-  def exprFromParProto(par: Par): Option[RhoExpr] = {
+  def exprFromParRho(par: Par): Option[RhoExpr] = {
     val exprs =
-      par.exprs.flatMap(exprFromExprProto) ++
+      par.exprs.flatMap(exprFromExprRho) ++
         par.unforgeables.flatMap(unforgFromProto) ++
         par.bundles.flatMap(exprFromBundleProto)
     // Implements semantic of Par with Unit: P | Nil ==> P
@@ -277,51 +280,40 @@ object WebApi {
     else ExprPar(exprs.toList).some
   }
 
-  private def exprFromExprProto(exp: Expr): Option[RhoExpr] =
+  private def exprFromExprRho(exp: Expr): Option[RhoExpr] =
     // Primitive types
-    if (exp.exprInstance.isGBool)
-      ExprBool(exp.getGBool).some
-    else if (exp.exprInstance.isGInt)
-      ExprInt(exp.getGInt).some
-    else if (exp.exprInstance.isGString)
-      ExprString(exp.getGString).some
-    else if (exp.exprInstance.isGUri)
-      ExprUri(exp.getGUri).some
-    else if (exp.exprInstance.isGByteArray)
-      // Binary data as base16 string
-      ExprBytes(exp.getGByteArray.toHexString).some
-    // Tuple
-    else if (exp.exprInstance.isETupleBody)
-      ExprTuple(exp.getETupleBody.ps.flatMap(exprFromParProto).toList).some
-    // List
-    else if (exp.exprInstance.isEListBody)
-      ExprList(exp.getEListBody.ps.flatMap(exprFromParProto).toList).some
-    // Set
-    else if (exp.exprInstance.isESetBody)
-      ExprSet(exp.getESetBody.ps.flatMap(exprFromParProto).toSet).some
-    // Map
-    else if (exp.exprInstance.isEMapBody) {
-      val fields = for {
-        (k, v)  <- exp.getEMapBody.ps
-        keyExpr <- exprFromParProto(k)
-        key <- keyExpr match {
-                case ExprString(str) => str.some
-                case ExprInt(num)    => num.toString.some
-                case ExprBool(bool)  => bool.toString.some
-                case ExprUri(uri)    => uri.some
-                case ExprUnforg(unforg) =>
-                  unforg match {
-                    case UnforgPrivate(hex)  => hex.some
-                    case UnforgDeploy(hex)   => hex.some
-                    case UnforgDeployer(hex) => hex.some
-                  }
-                case ExprBytes(hex) => hex.some
-                case _              => none
-              }
-        value <- exprFromParProto(v)
-      } yield (key, value)
-      ExprMap(fields.toMap).some
-    } else none
+    exp.exprInstance match {
+      case GBool(x)      => ExprBool(x).some
+      case GInt(x)       => ExprInt(x).some
+      case GString(x)    => ExprString(x).some
+      case GUri(x)       => ExprUri(x).some
+      case GByteArray(x) => ExprBytes(x.toHexString).some // Binary data as base16 string
+      case EListBody(x)  => ExprList(x.ps.flatMap(exprFromParRho).toList).some
+      case ETupleBody(x) => ExprTuple(x.ps.flatMap(exprFromParRho).toList).some
+      case ESetBody(x)   => ExprSet(x.ps.flatMap(exprFromParRho).toSet).some
+      case EMapBody(x) =>
+        val fields = for {
+          (k, v)  <- x.ps
+          keyExpr <- exprFromParRho(k)
+          key <- keyExpr match {
+                  case ExprString(str) => str.some
+                  case ExprInt(num)    => num.toString.some
+                  case ExprBool(bool)  => bool.toString.some
+                  case ExprUri(uri)    => uri.some
+                  case ExprUnforg(unforg) =>
+                    unforg match {
+                      case UnforgPrivate(hex)  => hex.some
+                      case UnforgDeploy(hex)   => hex.some
+                      case UnforgDeployer(hex) => hex.some
+                    }
+                  case ExprBytes(hex) => hex.some
+                  case _              => none
+                }
+          value <- exprFromParRho(v)
+        } yield (key, value)
+        ExprMap(fields.toMap).some
+      case _ => None
+    }
 
   private def unforgFromProto(un: GUnforgeable): Option[ExprUnforg] =
     if (un.unfInstance.isGPrivateBody)
@@ -332,7 +324,7 @@ object WebApi {
       mkUnforgExpr(UnforgDeployer, un.unfInstance.gDeployerIdBody.get.publicKey).some
     else none
 
-  private def exprFromBundleProto(b: Bundle): Option[RhoExpr] = exprFromParProto(b.body)
+  private def exprFromBundleProto(b: Bundle): Option[RhoExpr] = exprFromParRho(b.body)
 
   private def mkUnforgExpr(f: String => RhoUnforg, bs: ByteString): ExprUnforg =
     ExprUnforg(f(bs.toHexString))
@@ -394,7 +386,7 @@ object WebApi {
   private def toDataAtNameResponse(req: (Seq[DataWithBlockInfo], Int)): DataAtNameResponse = {
     val (dbs, length) = req
     val exprsWithBlock = dbs.foldLeft(List[RhoExprWithBlock]()) { (acc, data) =>
-      val exprs = data.postBlockData.flatMap(exprFromParProto)
+      val exprs = data.postBlockData.map(fromProto).flatMap(exprFromParRho)
       // Implements semantic of Par with Unit: P | Nil ==> P
       val expr  = if (exprs.size == 1) exprs.head else ExprPar(exprs.toList)
       val block = data.block
@@ -410,7 +402,7 @@ object WebApi {
     status.status match {
       case DepSt.ProcessedWithSuccess(s) =>
         ProcessedWithSuccess(
-          s.deployResult.map(exprFromParProto(_).get),
+          s.deployResult.map(x => exprFromParRho(fromProto(x)).get),
           s.block
         ).some
       case DepSt.ProcessedWithError(s) =>
@@ -422,7 +414,7 @@ object WebApi {
 
   private def toRhoDataResponse(data: (Seq[Par], LightBlockInfo)): RhoDataResponse = {
     val (pars, lightBlockInfo) = data
-    val rhoExprs               = pars.flatMap(exprFromParProto)
+    val rhoExprs               = pars.flatMap(exprFromParRho)
     RhoDataResponse(rhoExprs, lightBlockInfo)
   }
 }

@@ -14,6 +14,7 @@ import coop.rchain.crypto.hash.Blake2b256
 import coop.rchain.metrics.Span
 import coop.rchain.models.BlockHash.BlockHash
 import coop.rchain.models.Expr.ExprInstance.GInt
+import coop.rchain.models.ProtoBindings.toProto
 import coop.rchain.models.Validator.Validator
 import coop.rchain.models._
 import coop.rchain.models.blockImplicits.getRandomBlock
@@ -112,7 +113,7 @@ class ListeningNameAPITest
       length shouldBe 1
       val (par, block) = (blocks.head.postBlockData.head, blocks.head.block)
 
-      par shouldBe resultData
+      par shouldBe toProto(resultData)
       block shouldBe BlockApi.getLightBlockInfo(b1)
 
       rm.getData(*)(*) wasCalled once
@@ -136,7 +137,7 @@ class ListeningNameAPITest
       length shouldBe 1
       val (par, block) = (blocks.head.postBlockData.head, blocks.head.block)
 
-      par shouldBe resultData
+      par shouldBe toProto(resultData)
       block shouldBe BlockApi.getLightBlockInfo(b1)
 
       rm.getData(*)(*) wasCalled once

@@ -7,7 +7,7 @@ import coop.rchain.models.{EVar, Expr, Par}
 private[matcher] object ParSpatialMatcherUtils {
 
   def noFrees(par: Par): Par =
-    par.withExprs(noFrees(par.exprs))
+    par.copy(exprs = noFrees(par.exprs))
 
   def noFrees(exprs: Seq[Expr]): Seq[Expr] =
     exprs.filter({ (expr) =>

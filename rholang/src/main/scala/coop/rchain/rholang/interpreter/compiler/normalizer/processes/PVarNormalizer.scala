@@ -48,7 +48,7 @@ object PVarNormalizer {
                 ProcVisitOutputs(
                   input.par
                     .prepend(EVar(FreeVar(input.freeMap.nextLevel)), input.boundMapChain.depth)
-                    .withConnectiveUsed(true),
+                    .copy(connectiveUsed = true),
                   newBindingsPair
                 ).pure[F]
               case Some(FreeContext(_, _, firstSourcePosition)) =>
@@ -65,7 +65,7 @@ object PVarNormalizer {
         ProcVisitOutputs(
           input.par
             .prepend(EVar(Wildcard(Var.WildcardMsg())), input.boundMapChain.depth)
-            .withConnectiveUsed(true),
+            .copy(connectiveUsed = true),
           input.freeMap.addWildcard(SourcePosition(p.line_num, p.col_num))
         ).pure[F]
     }

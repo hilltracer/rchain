@@ -16,7 +16,7 @@ import coop.rchain.casper.util.{BondsParser, VaultParser}
 import coop.rchain.crypto.PrivateKey
 import coop.rchain.crypto.signatures.Secp256k1
 import coop.rchain.metrics.{Metrics, NoopSpan, Span}
-import coop.rchain.models.{BindPattern, ListParWithRandom, Par, TaggedContinuation}
+import coop.rchain.models.{BindPattern, EList, ETuple, ListParWithRandom, Par, TaggedContinuation}
 import coop.rchain.node.revvaultexport.RhoTrieTraverser
 import coop.rchain.node.web.{
   CloseBlock,
@@ -110,8 +110,20 @@ object TransactionBalances {
                              contract,
                              block.postStateHash
                            )
-      perValidatorVaultAddr = perValidatorVaults.head.exprs.head.getEListBody.ps
-        .map(p => p.exprs.head.getETupleBody.ps(1).exprs.head.getGString)
+      perValidatorVaultAddr = perValidatorVaults.head.exprs.head.exprInstance.eListBody
+        .getOrElse(EList())
+        .ps
+        .map(
+          p =>
+            p.exprs.head.exprInstance.eTupleBody
+              .getOrElse(ETuple())
+              .ps(1)
+              .exprs
+              .head
+              .exprInstance
+              .gString
+              .getOrElse("")
+        )
     } yield perValidatorVaultAddr
   }
 

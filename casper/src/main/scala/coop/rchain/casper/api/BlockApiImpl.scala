@@ -34,7 +34,6 @@ import coop.rchain.metrics.{Metrics, Span}
 import coop.rchain.models.BlockHash.BlockHash
 import coop.rchain.models.rholang.RhoType.RhoDeployId
 import coop.rchain.models.rholang.sorter.Sortable._
-import coop.rchain.models.serialization.implicits._
 import coop.rchain.models.syntax._
 import coop.rchain.models.{BlockMetadata, Par}
 import coop.rchain.rspace.hashing.StableHashProvider
@@ -43,6 +42,8 @@ import coop.rchain.sdk.syntax.all._
 import coop.rchain.shared.Log
 import coop.rchain.shared.syntax._
 import fs2.Stream
+import coop.rchain.models.ProtoBindings.toProto
+import coop.rchain.rholang.interpreter.storage.serializePar
 
 import scala.collection.immutable.SortedMap
 
@@ -191,7 +192,7 @@ class BlockApiImpl[F[_]: Concurrent: RuntimeManager: BlockDagStorage: BlockStore
                      for {
                        data              <- getDataAtParRaw(deployIdCh, blockHash)
                        (par, lightBlock) = data
-                       success           = ProcessedWithSuccess(par, lightBlock)
+                       success           = ProcessedWithSuccess(par.map(toProto), lightBlock)
                      } yield DeployExecStatus().withProcessedWithSuccess(success)
                    else
                      for {
@@ -386,7 +387,7 @@ class BlockApiImpl[F[_]: Concurrent: RuntimeManager: BlockDagStorage: BlockStore
       for {
         data      <- RuntimeManager[F].getData(stateHash)(sortedListeningName)
         blockInfo = getLightBlockInfo(block)
-      } yield Option[DataWithBlockInfo](DataWithBlockInfo(data, blockInfo))
+      } yield Option[DataWithBlockInfo](DataWithBlockInfo(data.map(toProto), blockInfo))
     } else {
       none[DataWithBlockInfo].pure[F]
     }
@@ -400,7 +401,8 @@ class BlockApiImpl[F[_]: Concurrent: RuntimeManager: BlockDagStorage: BlockStore
       for {
         continuations <- RuntimeManager[F].getContinuation(stateHash)(sortedListeningNames)
         continuationInfos = continuations.map(
-          continuation => WaitingContinuationInfo(continuation._1, continuation._2)
+          continuation =>
+            WaitingContinuationInfo(continuation._1.map(toProto), toProto(continuation._2))
         )
         blockInfo = getLightBlockInfo(block)
       } yield Option[ContinuationsWithBlockInfo](
