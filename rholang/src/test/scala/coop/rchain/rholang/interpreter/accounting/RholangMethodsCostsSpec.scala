@@ -4,6 +4,7 @@ import com.google.protobuf.ByteString
 import coop.rchain.metrics
 import coop.rchain.metrics.{Metrics, NoopSpan, Span}
 import coop.rchain.models.Expr.ExprInstance._
+import coop.rchain.models.ProtoBindings.toProto
 import coop.rchain.models._
 import coop.rchain.models.rholang.implicits._
 import coop.rchain.rholang.interpreter.RhoRuntime.RhoTuplespace
@@ -141,7 +142,7 @@ class RholangMethodsCostsSpec
         forAll(pars) { par =>
           val substitutionCost = Cost(par)
           val method           = methodCall("toByteArray", par, List.empty)
-          val factor           = par.serializedSize.toDouble / baseTerm.serializedSize
+          val factor           = toProto(par).serializedSize.toDouble / toProto(baseTerm).serializedSize
           // We substitute the target term before evaluating toByteArray method on it.
           // Cost of substitution is proportional to the byte size of the term.
           val c = Cost((baseCost.value + (substitutionCost.value / factor)).toLong)
@@ -602,7 +603,7 @@ class RholangMethodsCostsSpec
           (gbyteArray(0), 0L, 0L),
           (gbyteArray(1), 0L, 1L),
           (gbyteArray(1000), 10L, 20L),
-          (GByteArray(toRholangMap(mapN(10, GInt(10L))).toByteString), 0L, 20L)
+          (GByteArray(toProto(toRholangMap(mapN(10, GInt(10L)))).toByteString), 0L, 20L)
         )
         val refSlice = (0, 1)
         val baseCost = sliceCost(refSlice._2)
@@ -978,18 +979,18 @@ class RholangMethodsCostsSpec
   def map(pairs: Seq[(Par, Par)]): Map[Par, Par] = Map(pairs: _*)
   def emptyMap: Map[Par, Par]                    = map(Seq.empty[(Par, Par)])
   def mapN(n: Long, value: Par): Map[Par, Par] =
-    (1L to n).map(i => (Par().withExprs(Seq(GInt(i))), value)).toMap
+    (1L to n).map(i => (Par(exprs = Seq(GInt(i))), value)).toMap
   def toRholangMap(map: Map[Par, Par]): EMapBody =
     EMapBody(ParMap(SortedParMap(map)))
 
   def emptySet: Set[Par] = setN(0)
   def setN(n: Long): Set[Par] =
-    (1L to n).map(i => Par().withExprs(Seq(GInt(i)))).toSet
+    (1L to n).map(i => Par(exprs = Seq(GInt(i)))).toSet
   def toRholangSet(set: Set[Par]): ESetBody =
     ESetBody(ParSet(set.toSeq))
 
   def listN(n: Long): Vector[Par] =
-    (1L to n).map(i => Par().withExprs(Vector(GInt(i)))).toVector
+    (1L to n).map(i => Par(exprs = Vector(GInt(i)))).toVector
   def emptyList: Vector[Par] = Vector.empty[Par]
 
   def toRholangList(vector: Vector[Par]): EListBody =

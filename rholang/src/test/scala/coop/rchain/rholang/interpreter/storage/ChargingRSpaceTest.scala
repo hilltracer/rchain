@@ -131,7 +131,7 @@ class ChargingRSpaceTest extends FixtureAnyFlatSpec with TripleEqualsSupport wit
     // we should not charge for storing any of the terms
     val TestFixture(chargingRSpace, cost) = fixture
 
-    val data               = ListParWithRandom().withPars(Vector(GInt(1)))
+    val data               = ListParWithRandom(pars = Vector(GInt(1)))
     val produceStorageCost = storageCostProduce(channel, data)
 
     val initPhlos =
@@ -153,7 +153,7 @@ class ChargingRSpaceTest extends FixtureAnyFlatSpec with TripleEqualsSupport wit
     val TestFixture(chargingRSpace, cost) = fixture
     val pattern                           = BindPattern(Vector(EVar(FreeVar(0))))
 
-    val data        = ListParWithRandom().withPars(Vector(GInt(1)))
+    val data        = ListParWithRandom(pars = Vector(GInt(1)))
     val produceCost = storageCostProduce(channel, data)
 
     val initPhlos = Cost(1000)
@@ -175,7 +175,7 @@ class ChargingRSpaceTest extends FixtureAnyFlatSpec with TripleEqualsSupport wit
     // we should charge for storing non-linear continuation
     val TestFixture(chargingRSpace, cost) = fixture
 
-    val data = ListParWithRandom().withPars(Vector(GInt(1)))
+    val data = ListParWithRandom(pars = Vector(GInt(1)))
 
     val initPhlos = Cost(1000)
 
@@ -203,8 +203,8 @@ class ChargingRSpaceTest extends FixtureAnyFlatSpec with TripleEqualsSupport wit
     val patterns                          = patternsN(2)
     val cont                              = continuation()
 
-    val dataX = ListParWithRandom().withPars(Vector(GInt(1)))
-    val dataY = ListParWithRandom().withPars(Vector(GInt(10)))
+    val dataX = ListParWithRandom(pars = Vector(GInt(1)))
+    val dataY = ListParWithRandom(pars = Vector(GInt(10)))
 
     val produceYCost            = accounting.storageCostProduce(channels(1), dataY)
     val consumeEventStorageCost = accounting.eventStorageCost(channels.size)
@@ -253,7 +253,7 @@ class ChargingRSpaceTest extends FixtureAnyFlatSpec with TripleEqualsSupport wit
     // we should refund for removing @x!(100) from tuplespace
     val TestFixture(chargingRSpace, cost) = fixture
 
-    val data        = ListParWithRandom().withPars(Vector(GInt(1)))
+    val data        = ListParWithRandom(pars = Vector(GInt(1)))
     val produceCost = accounting.storageCostProduce(channel, data)
 
     val initPhlos = Cost(1000)
@@ -280,9 +280,9 @@ class ChargingRSpaceTest extends FixtureAnyFlatSpec with TripleEqualsSupport wit
     val patterns                          = patternsN(3)
     val cont                              = continuation()
 
-    val dataX                = ListParWithRandom().withPars(Vector(GInt(1)))
-    val dataY                = ListParWithRandom().withPars(Vector(GInt(10)))
-    val dataZ                = ListParWithRandom().withPars(Vector(GInt(100)))
+    val dataX                = ListParWithRandom(pars = Vector(GInt(1)))
+    val dataY                = ListParWithRandom(pars = Vector(GInt(10)))
+    val dataZ                = ListParWithRandom(pars = Vector(GInt(100)))
     val produceXCost         = accounting.storageCostProduce(x, dataX)
     val produceYCost         = accounting.storageCostProduce(y, dataY)
     val consumeCost          = accounting.storageCostConsume(List(x, y, z), patterns, cont)
@@ -329,7 +329,7 @@ object ChargingRSpaceTest {
   type ChargingRSpace = RhoTuplespace[Task]
   final case class TestFixture(chargingRSpace: ChargingRSpace, cost: _cost[Task])
 
-  val NilPar = ListParWithRandom().withPars(Seq(Par()))
+  val NilPar = ListParWithRandom(pars = Seq(Par()))
 
   def channelsN(n: Int): List[Par] =
     (1 to n).map(x => byteName(x.toByte)).toList
@@ -344,7 +344,7 @@ object ChargingRSpaceTest {
       .toList
 
   def continuation(
-      par: Par = Par().withExprs(Seq(GInt(1))),
+      par: Par = Par(exprs = Seq(GInt(1))),
       r: Blake2b512Random = Blake2b512Random.defaultRandom
   ): TaggedContinuation =
     TaggedContinuation(ParBody(ParWithRandom(par, r)))

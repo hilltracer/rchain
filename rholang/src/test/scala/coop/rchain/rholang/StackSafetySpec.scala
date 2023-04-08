@@ -4,7 +4,9 @@ import coop.rchain.metrics
 import coop.rchain.metrics.{Metrics, NoopSpan, Span}
 import coop.rchain.models.Connective.ConnectiveInstance.ConnNotBody
 import coop.rchain.models.Expr.ExprInstance.GInt
+import coop.rchain.models.ProtoBindings.toProto
 import coop.rchain.models._
+import coop.rchain.models.protobuf.ParProto
 import coop.rchain.models.serialization.implicits._
 import coop.rchain.rholang.Resources.mkRuntime
 import coop.rchain.rholang.StackSafetySpec.findMaxRecursionDepth
@@ -233,19 +235,19 @@ class AstTypeclassesStackSafetySpec extends AnyFlatSpec with Matchers {
       if (n == 0) par
       else hugePar(n - 1, Par(connectives = Seq(Connective(ConnNotBody(par)))))
 
-    val par        = hugePar(maxRecursionDepth)
-    val anotherPar = hugePar(maxRecursionDepth)
+    val par        = toProto(hugePar(maxRecursionDepth))
+    val anotherPar = toProto(hugePar(maxRecursionDepth))
 
     noException shouldBe thrownBy {
       ProtoM.serializedSize(par).value
 
-      val encoded = Serialize[Par].encode(par)
-      Serialize[Par].decode(encoded)
+      val encoded = Serialize[ParProto].encode(par)
+      Serialize[ParProto].decode(encoded)
 
-      HashM[Par].hash[Coeval](par).value
+      HashM[ParProto].hash[Coeval](par).value
       par.hashCode()
 
-      EqualM[Par].equal[Coeval](par, anotherPar).value
+      EqualM[ParProto].equal[Coeval](par, anotherPar).value
       par == anotherPar
 
     }

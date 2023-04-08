@@ -1,12 +1,13 @@
 package coop.rchain.models
 
 import java.util
-
 import com.google.protobuf.ByteString
 import coop.rchain.models.Assertions.assertEqual
 import coop.rchain.models.Connective.ConnectiveInstance.ConnBool
 import coop.rchain.models.Expr.ExprInstance.{GInt, _}
+import coop.rchain.models.ProtoBindings.toProto
 import coop.rchain.models.Var.VarInstance.BoundVar
+import coop.rchain.models.protobuf.EMapProto
 import coop.rchain.models.rholang.implicits._
 import coop.rchain.models.rholang.sorter.Sortable
 import coop.rchain.models.rholang.sorter.ordering._
@@ -23,7 +24,7 @@ class SortedParMapSpec extends AnyFlatSpec with ScalaCheckPropertyChecks with Ma
   private[this] def toKVpair(pair: (Par, Par)): KeyValuePair = KeyValuePair(pair._1, pair._2)
 
   private[this] def serializeEMap(map: SortedParMap): Array[Byte] =
-    EMap(map.sortedList.map(toKVpair)).toByteArray
+    toProto(EMap(map.sortedList.map(toKVpair))).toByteArray
 
   val pars: Seq[(Par, Par)] = Seq[(Par, Par)](
     (GInt(7), GString("Seven")),
@@ -34,7 +35,9 @@ class SortedParMapSpec extends AnyFlatSpec with ScalaCheckPropertyChecks with Ma
   )
 
   private def roundTripTest(parMap: SortedParMap): Assertion =
-    EMap.parseFrom(serializeEMap(parMap)) should ===(EMap(parMap.sortedList.map(toKVpair)))
+    EMapProto.parseFrom(serializeEMap(parMap)) should ===(
+      toProto(EMap(parMap.sortedList.map(toKVpair)))
+    )
 
   def sample = SortedParMap(pars)
 
@@ -48,10 +51,10 @@ class SortedParMapSpec extends AnyFlatSpec with ScalaCheckPropertyChecks with Ma
       (GInt(2), ParSet(Seq[Par](GInt(2))))
     )
 
-    val afterRoundtripSerialization = EMap.parseFrom(serializeEMap(sample)).kvs
+    val afterRoundtripSerialization = EMapProto.parseFrom(serializeEMap(sample)).kvs
     val result = expectedPairs.forall {
       case (key, value) =>
-        afterRoundtripSerialization.find(_.key == key).get.value == value
+        afterRoundtripSerialization.find(_.key == toProto(key)).get.value == toProto(value)
     }
     result should be(true)
   }

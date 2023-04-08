@@ -1,10 +1,12 @@
 package coop.rchain.models
 
 import com.google.protobuf.ByteString
-import coop.rchain.models.Expr.ExprInstance.GInt
-import coop.rchain.models.testImplicits._
+import coop.rchain.models.protobuf.ExprProto.ExprInstance.GInt
+import coop.rchain.models.protobuf._
+import coop.rchain.models.protobuf.testImplicitsProto._
 import coop.rchain.models.testUtils.TestUtils.forAllSimilarA
 import monix.eval.Coeval
+import org.scalacheck.ScalacheckShapeless.arbitrarySingletonType
 import org.scalacheck.{Arbitrary, Shrink}
 import org.scalatest.Assertion
 import org.scalatest.flatspec.AnyFlatSpec
@@ -22,38 +24,38 @@ class EqualMSpec extends AnyFlatSpec with ScalaCheckPropertyChecks with Matchers
 
   behavior of "EqualM"
 
-  sameResultAsReference[Par]
-  sameResultAsReference[Expr]
-  sameResultAsReference[BindPattern]
-  sameResultAsReference[Bundle]
-  sameResultAsReference[Connective]
-  sameResultAsReference[ConnectiveBody]
-  sameResultAsReference[EList]
-  sameResultAsReference[EMap]
-  sameResultAsReference[EMatches]
-  sameResultAsReference[EMethod]
-  sameResultAsReference[ENeq]
-  sameResultAsReference[ENot]
-  sameResultAsReference[EOr]
-  sameResultAsReference[ESet]
-  sameResultAsReference[ETuple]
-  sameResultAsReference[EVar]
-  sameResultAsReference[GPrivate]
-  sameResultAsReference[KeyValuePair]
-  sameResultAsReference[ListBindPatterns]
-  sameResultAsReference[Match]
-  sameResultAsReference[MatchCase]
-  sameResultAsReference[New]
-  sameResultAsReference[ParWithRandom]
-  sameResultAsReference[PCost]
-  sameResultAsReference[Receive]
-  sameResultAsReference[ReceiveBind]
-  sameResultAsReference[Send]
-  sameResultAsReference[TaggedContinuation]
-  sameResultAsReference[Var]
-  sameResultAsReference[VarRef]
-  sameResultAsReference[ParSet]
-  sameResultAsReference[ParMap]
+  sameResultAsReference[ParProto]
+  sameResultAsReference[ExprProto]
+  sameResultAsReference[BindPatternProto]
+  sameResultAsReference[BundleProto]
+  sameResultAsReference[ConnectiveProto]
+  sameResultAsReference[ConnectiveBodyProto]
+  sameResultAsReference[EListProto]
+  sameResultAsReference[EMapProto]
+  sameResultAsReference[EMatchesProto]
+  sameResultAsReference[EMethodProto]
+  sameResultAsReference[ENeqProto]
+  sameResultAsReference[ENotProto]
+  sameResultAsReference[EOrProto]
+  sameResultAsReference[ESetProto]
+  sameResultAsReference[ETupleProto]
+  sameResultAsReference[EVarProto]
+  sameResultAsReference[GPrivateProto]
+  sameResultAsReference[KeyValuePairProto]
+  sameResultAsReference[ListBindPatternsProto]
+  sameResultAsReference[MatchProto]
+  sameResultAsReference[MatchCaseProto]
+  sameResultAsReference[NewProto]
+  sameResultAsReference[ParWithRandomProto]
+  sameResultAsReference[PCostProto]
+  sameResultAsReference[ReceiveProto]
+  sameResultAsReference[ReceiveBindProto]
+  sameResultAsReference[SendProto]
+  sameResultAsReference[TaggedContinuationProto]
+  sameResultAsReference[VarProto]
+  sameResultAsReference[VarRefProto]
+  sameResultAsReference[ParSetProto]
+  sameResultAsReference[ParMapProto]
 
   sameResultAsReference[Int]
   sameResultAsReference[BigInt]
@@ -63,12 +65,12 @@ class EqualMSpec extends AnyFlatSpec with ScalaCheckPropertyChecks with Matchers
   sameResultAsReference[BitSet]
   sameResultAsReference[AlwaysEqual[BitSet]]
 
-  sameResultAsReference[SortedParHashSet]
-  sameResultAsReference[SortedParMap]
+  sameResultAsReference[SortedParHashSetProto]
+  sameResultAsReference[SortedParMapProto]
 
   //fixed regressions / corner cases:
   sameResultAsReference(GInt(-1), GInt(-1))
-  sameResultAsReference(Expr(GInt(-1)), Expr(GInt(-1)))
+  sameResultAsReference(ExprProto(GInt(-1)), ExprProto(GInt(-1)))
 
   def sameResultAsReference[A <: Any: EqualM: Arbitrary: Shrink: Pretty](
       implicit tag: ClassTag[A]
@@ -83,10 +85,10 @@ class EqualMSpec extends AnyFlatSpec with ScalaCheckPropertyChecks with Matchers
     // and hard-code the current definition for the handmade AST classes.
 
     def reference(self: Any, other: Any): Boolean = (self, other) match {
-      case (left: ParSet, right: ParSet) =>
-        Equiv.by((x: ParSet) => (x.ps, x.remainder, x.connectiveUsed)).equiv(left, right)
-      case (left: ParMap, right: ParMap) =>
-        Equiv.by((x: ParMap) => (x.ps, x.remainder, x.connectiveUsed)).equiv(left, right)
+      case (left: ParSetProto, right: ParSetProto) =>
+        Equiv.by((x: ParSetProto) => (x.ps, x.remainder, x.connectiveUsed)).equiv(left, right)
+      case (left: ParMapProto, right: ParMapProto) =>
+        Equiv.by((x: ParMapProto) => (x.ps, x.remainder, x.connectiveUsed)).equiv(left, right)
       case (left: Product, right: Product) =>
         left.getClass.isInstance(other) &&
           left.productIterator

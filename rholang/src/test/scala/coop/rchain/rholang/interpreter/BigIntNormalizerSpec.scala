@@ -32,8 +32,9 @@ class BigIntNormalizerSpec extends AsyncFlatSpec with MonixTaskTest with Matcher
           evalResult <- runtime.evaluate(source)
           result <- if (evalResult.errors.isEmpty)
                      for {
-                       data         <- runtime.getData(GString(outcomeCh)).map(_.head)
-                       bigIntResult = data.a.pars.head.exprs.head.getGBigInt
+                       data <- runtime.getData(GString(outcomeCh)).map(_.head)
+                       bigIntResult = data.a.pars.head.exprs.head.exprInstance.gBigInt
+                         .getOrElse(BigInt(0))
                      } yield Right(bigIntResult)
                    else Left(evalResult.errors.head).pure[F]
         } yield result
