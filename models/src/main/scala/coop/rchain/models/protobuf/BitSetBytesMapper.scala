@@ -1,4 +1,4 @@
-package coop.rchain.models
+package coop.rchain.models.protobuf
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder.LITTLE_ENDIAN

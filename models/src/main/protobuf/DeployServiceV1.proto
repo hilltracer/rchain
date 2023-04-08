@@ -108,7 +108,7 @@ message DeployExecStatus {
 }
 
 message ProcessedWithSuccess {
-  repeated Par deployResult = 1;
+  repeated ParProto deployResult = 1;
   LightBlockInfo block           = 2 [(scalapb.field).no_box = true];
 }
 
@@ -175,7 +175,7 @@ message RhoDataResponse {
 }
 
 message RhoDataPayload {
-  repeated Par par     = 1;
+  repeated ParProto par     = 1;
   LightBlockInfo block = 2 [(scalapb.field).no_box = true];
 }
 

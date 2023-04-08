@@ -1,8 +1,8 @@
 package coop.rchain.models
 import java.io.{PrintWriter, StringWriter}
-
 import com.google.protobuf.ByteString
 import coop.rchain.crypto.hash.Blake2b512Random
+import coop.rchain.models.protobuf._
 import monix.eval.Coeval
 
 import scala.annotation.switch
@@ -62,6 +62,10 @@ trait PrettyInstances extends PrettyDerivation {
   implicit def prettyHashSet[A: Pretty] = fromIterable[HashSet[A], A]("HashSet")
   implicit def prettySortedParHashSet   = fromIterable[SortedParHashSet, Par]("SortedParHashSet(Seq")
   implicit def prettySortedParMap       = fromIterable[SortedParMap, (Par, Par)]("SortedParMap(Map")
+  implicit def prettySortedParHashSetProto =
+    fromIterable[SortedParHashSetProto, ParProto]("SortedParHashSetProto(Seq")
+  implicit def prettySortedParMapProto =
+    fromIterable[SortedParMapProto, (ParProto, ParProto)]("SortedParMapProto(Map")
 
   implicit def prettyPair[A: Pretty, B: Pretty]: Pretty[(A, B)] =
     (value: (A, B), indentLevel: Int) => {
@@ -97,6 +101,14 @@ trait PrettyInstances extends PrettyDerivation {
   implicit val PrettyReceiveBind        = gen[ReceiveBind]
   implicit val PrettyTaggedContinuation = gen[TaggedContinuation]
   implicit val PrettyParWithRandom      = gen[ParWithRandom]
+
+  implicit val PrettyParProto: Pretty[ParProto] = gen[ParProto]
+  implicit val PrettyExprProto                  = gen[ExprProto]
+  implicit val PrettyConnectiveProto            = gen[ConnectiveProto]
+  implicit val PrettyReceiveProto               = gen[ReceiveProto]
+  implicit val PrettyReceiveBindProto           = gen[ReceiveBindProto]
+  implicit val PrettyTaggedContinuationProto    = gen[TaggedContinuationProto]
+  implicit val PrettyParWithRandomProto         = gen[ParWithRandomProto]
 
   def singleLine[A](print: A => String): Pretty[A] = (value: A, indentLevel: Int) => print(value)
 
