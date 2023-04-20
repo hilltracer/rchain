@@ -125,7 +125,7 @@ object RholangMergingLogic {
     } yield storeAction
 
   private val byteStringOrdering =
-    Ordering.by[ByteString, Iterable[Byte]](_.toByteArray)(Ordering.Iterable[Byte])
+    Ordering.by((x: ByteString) => x.toByteArray.toIndexedSeq)(Ordering.Implicits.seqOrdering)
 
   /* Number channel value encoders/decoders */
 
