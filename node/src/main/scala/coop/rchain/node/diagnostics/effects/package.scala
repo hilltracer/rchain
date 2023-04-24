@@ -6,6 +6,7 @@ import cats.mtl.ApplicativeLocal
 import coop.rchain.metrics.Metrics.Source
 import coop.rchain.metrics.{Metrics, Span}
 import coop.rchain.node.runtime.NodeCallCtx
+import coop.rchain.sdk.syntax.all.sdkSyntaxVoid
 import kamon.Kamon
 import kamon.trace.{Span => KSpan}
 
@@ -31,16 +32,16 @@ object Trace {
       parent match {
         case Some(st) =>
           Kamon
-            .buildSpan(s)
-            .withTag("network-id", networkId)
-            .withTag("host", host)
+            .spanBuilder(s)
             .asChildOf(st.ks)
+            .tag("network-id", networkId)
+            .tag("host", host)
             .start()
         case None =>
           Kamon
-            .buildSpan(s)
-            .withTag("network-id", networkId)
-            .withTag("host", host)
+            .spanBuilder(s)
+            .tag("network-id", networkId)
+            .tag("host", host)
             .start()
       }
     }
@@ -113,56 +114,56 @@ package object effects {
     new Metrics[F] {
       import kamon._
 
-      private val m = scala.collection.concurrent.TrieMap[String, metric.Metric[_]]()
+      private val m = scala.collection.concurrent.TrieMap[String, metric.Metric[_, _]]()
 
       private def source(name: String)(implicit ev: Metrics.Source): String = s"$ev.$name"
 
       def incrementCounter(name: String, delta: Long)(implicit ev: Metrics.Source): F[Unit] =
         Sync[F].delay {
           m.getOrElseUpdate(source(name), Kamon.counter(source(name))) match {
-            case c: metric.Counter => c.increment(delta)
+            case c: metric.Counter => c.increment(delta).void()
           }
         }
 
       def incrementSampler(name: String, delta: Long)(implicit ev: Metrics.Source): F[Unit] =
         Sync[F].delay {
           m.getOrElseUpdate(source(name), Kamon.rangeSampler(source(name))) match {
-            case c: metric.RangeSampler => c.increment(delta)
+            case c: metric.RangeSampler => c.increment(delta).void()
           }
         }
 
       def sample(name: String)(implicit ev: Metrics.Source): F[Unit] =
         Sync[F].delay {
           m.getOrElseUpdate(source(name), Kamon.rangeSampler(source(name))) match {
-            case c: metric.RangeSampler => c.sample
+            case c: metric.RangeSampler => c.sample().void()
           }
         }
 
       def setGauge(name: String, value: Long)(implicit ev: Metrics.Source): F[Unit] =
         Sync[F].delay {
           m.getOrElseUpdate(source(name), Kamon.gauge(source(name))) match {
-            case c: metric.Gauge => c.set(value)
+            case c: metric.Gauge => c.update(value.toDouble).void()
           }
         }
 
       def incrementGauge(name: String, delta: Long)(implicit ev: Metrics.Source): F[Unit] =
         Sync[F].delay {
           m.getOrElseUpdate(source(name), Kamon.gauge(source(name))) match {
-            case c: metric.Gauge => c.increment(delta)
+            case c: metric.Gauge => c.increment(delta.toDouble).void()
           }
         }
 
       def decrementGauge(name: String, delta: Long)(implicit ev: Metrics.Source): F[Unit] =
         Sync[F].delay {
           m.getOrElseUpdate(source(name), Kamon.gauge(source(name))) match {
-            case c: metric.Gauge => c.decrement(delta)
+            case c: metric.Gauge => c.decrement(delta.toDouble).void()
           }
         }
 
       def record(name: String, value: Long, count: Long = 1)(implicit ev: Metrics.Source): F[Unit] =
         Sync[F].delay {
           m.getOrElseUpdate(source(name), Kamon.histogram(source(name))) match {
-            case c: metric.Histogram => c.record(value, count)
+            case c: metric.Histogram => c.record(value, count).void()
           }
         }
 
