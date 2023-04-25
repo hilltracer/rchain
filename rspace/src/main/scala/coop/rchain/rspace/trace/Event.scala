@@ -119,7 +119,8 @@ object Consume {
   ): Consume = {
 //    val channelsByteVectors: Seq[ByteVector] = toOrderedByteVectors(channels)
     // Hash sorted serialized channels and sort by serialized hash
-    val channelsHashes        = hashSeq(channels)
+    val channelsHashes = hashSeq(channels)
+    println(channelsHashes)
     val channelsEncodedSorted = channelsHashes.map(_.bytes)
     new Consume(
       channelsHashes,

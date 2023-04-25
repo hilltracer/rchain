@@ -90,6 +90,7 @@ class RuntimeSpec extends AsyncFlatSpec with AsyncIOSpec with Matchers {
       r          <- runtime.evaluate(contract, Cost.UNSAFE_MAX, Map.empty, random)
       _          = r.errors should be(Vector.empty)
       checkpoint <- runtime.createCheckpoint
+      _          = println(checkpoint.log.mkString("\n"))
       expectedHash = Blake2b256Hash.fromHex(
         "10cce029738696f1e120a6bad4bdf3f18adca25ccf36133bd4916f607a6a50c0"
       )
