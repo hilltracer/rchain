@@ -511,8 +511,8 @@ class RuntimeManagerTest extends AnyFlatSpec with Matchers {
 
     task.attempt
       .map {
-        case Left(_: BugFoundError) => true.pure[IO]
-        case _                      => false.pure[IO]
+        case Left(_: BugFoundError) => true
+        case _                      => false
       }
       .unsafeRunSync() shouldBe true
   }

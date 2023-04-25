@@ -73,9 +73,8 @@ package object util {
           val bi = b(i)
           (ai != bi, (ai & 0xFF) - (bi & 0xFF))
         }
-        .filter(_._1)
+        .find(_._1)
         .map(_._2)
-        .lastOption
         .getOrElse(0)
     }
   }
