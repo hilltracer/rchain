@@ -14,7 +14,7 @@ sealed trait Par {
   override def hashCode: Int           = rhoHash.hashCode()
 
   lazy val serializedSize: Int         = meta.serializedSize.value
-  lazy val rhoHash: Blake2b256Hash     = meta.rhoHash.value
+  lazy val rhoHash: Blake2b256Hash     = meta.rhoHash
   lazy val locallyFree: BitSet         = meta.locallyFree.value
   lazy val connectiveUsed: Boolean     = meta.connectiveUsed.value
   lazy val evalRequired: Boolean       = meta.evalRequired.value
@@ -60,15 +60,14 @@ object Send {
 }
 
 final class ParMetaData(
-                         serializedSizeFn: M[Int],
-                         rhoHashFn: M[Blake2b256Hash],
-                         locallyFreeFn: M[BitSet],
-                         connectiveUsedFn: M[Boolean],
-                         evalRequiredFn: M[Boolean],
-                         substituteRequiredFn: M[Boolean]
-                       ) {
+    serializedSizeFn: M[Int],
+    val rhoHash: Blake2b256Hash,
+    locallyFreeFn: M[BitSet],
+    connectiveUsedFn: M[Boolean],
+    evalRequiredFn: M[Boolean],
+    substituteRequiredFn: M[Boolean]
+) {
   lazy val serializedSize: M[Int]         = serializedSizeFn
-  lazy val rhoHash: M[Blake2b256Hash]     = rhoHashFn
   lazy val locallyFree: M[BitSet]         = locallyFreeFn
   lazy val connectiveUsed: M[Boolean]     = connectiveUsedFn
   lazy val evalRequired: M[Boolean]       = evalRequiredFn
