@@ -44,7 +44,7 @@ object ParManager {
     def createParProc(sortedPs: SortedParSeq): ParProc = {
       val meta = new ParMetaData(
         lazyM(sizeParProc(sortedPs)),
-        lazyM(hashParProc(sortedPs)),
+        hashParProc(sortedPs),
         lazyM(locallyFreeParProc(sortedPs)),
         lazyM(connectiveUsedParProc(sortedPs)),
         lazyM(evalRequiredParProc(sortedPs)),
@@ -56,7 +56,7 @@ object ParManager {
     def createGNil: GNil = {
       val meta = new ParMetaData(
         lazyM(sizeGNil()),
-        lazyM(hashGNil()),
+        hashGNil(),
         lazyM(locallyFreeGNil()),
         lazyM(connectiveUsedGNil()),
         lazyM(evalRequiredGNil()),
@@ -68,7 +68,7 @@ object ParManager {
     def createGInt(v: Long): GInt = {
       val meta = new ParMetaData(
         lazyM(sizeGInt(v)),
-        lazyM(hashGInt(v)),
+        hashGInt(v),
         lazyM(locallyFreeGInt(v)),
         lazyM(connectiveUsedGInt(v)),
         lazyM(evalRequiredGInt(v)),
@@ -80,7 +80,7 @@ object ParManager {
     def createEList(ps: Seq[Par]): EList = {
       val meta = new ParMetaData(
         lazyM(sizeEList(ps)),
-        lazyM(hashEList(ps)),
+        hashEList(ps),
         lazyM(locallyFreeEList(ps)),
         lazyM(connectiveUsedEList(ps)),
         lazyM(evalRequiredEList(ps)),
@@ -93,7 +93,7 @@ object ParManager {
       val sortedData = SortedParSeq(data)
       val meta = new ParMetaData(
         lazyM(sizeSend(chan, sortedData, persistent)),
-        lazyM(hashSend(chan, sortedData, persistent)),
+        hashSend(chan, sortedData, persistent),
         lazyM(locallyFreeSend(chan, sortedData, persistent)),
         lazyM(connectiveUsedSend(chan, sortedData, persistent)),
         lazyM(evalRequiredSend(chan, sortedData, persistent)),
