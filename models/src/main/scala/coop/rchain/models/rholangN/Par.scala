@@ -11,14 +11,14 @@ sealed trait Par {
   protected def meta: ParMetaData
 
   override def equals(x: Any): Boolean = ParManager.equals(this, x)
-  override def hashCode: Int           = rhoHash.hashCode()
+  override def hashCode: Int           = meta.rhoHash.hashCode()
 
-  lazy val serializedSize: Int         = meta.serializedSize.value
-  lazy val rhoHash: Blake2b256Hash     = meta.rhoHash
-  lazy val locallyFree: BitSet         = meta.locallyFree.value
-  lazy val connectiveUsed: Boolean     = meta.connectiveUsed.value
-  lazy val evalRequired: Boolean       = meta.evalRequired.value
-  lazy val substituteRequired: Boolean = meta.substituteRequired.value
+  def serializedSize: Int         = meta.serializedSize
+  def rhoHash: Blake2b256Hash     = meta.rhoHash
+  def locallyFree: BitSet         = meta.locallyFree
+  def connectiveUsed: Boolean     = meta.connectiveUsed
+  def evalRequired: Boolean       = meta.evalRequired
+  def substituteRequired: Boolean = meta.substituteRequired
 
   def toBytes: ByteVector = parToBytes(this)
 }
@@ -27,7 +27,7 @@ object Par {
 }
 sealed trait Expr extends Par
 
-class ParProc(val ps: SortedParSeq, protected val meta: ParMetaData) extends Par {
+final case class ParProc(val ps: SortedParSeq, protected val meta: ParMetaData) extends Par {
   def add(p: Par): ParProc = ParProc(ps.add(p))
 }
 object ParProc {
@@ -35,20 +35,20 @@ object ParProc {
   def apply(sortedPs: SortedParSeq): ParProc = createParProc(sortedPs)
 }
 
-final class GNil(protected val meta: ParMetaData) extends Par
+final case class GNil(protected val meta: ParMetaData) extends Par
 object GNil { def apply(): GNil = createGNil }
 
-final class GInt(val v: Long, protected val meta: ParMetaData) extends Expr
+final case class GInt(val v: Long, protected val meta: ParMetaData) extends Expr
 object GInt { def apply(v: Long): GInt = createGInt(v) }
 
-final class EList(val ps: Seq[Par], protected val meta: ParMetaData) extends Expr
+final case class EList(val ps: Seq[Par], protected val meta: ParMetaData) extends Expr
 object EList {
   def apply(): EList             = createEList(Seq())
   def apply(p: Par): EList       = createEList(Seq(p))
   def apply(ps: Seq[Par]): EList = createEList(ps)
 }
 
-final class Send(
+final case class Send(
     val chan: Par,
     val data: SortedParSeq,
     val persistent: Boolean,
@@ -59,22 +59,16 @@ object Send {
     createSend(chan, data, persistent)
 }
 
-final class ParMetaData(
-    serializedSizeFn: M[Int],
+final case class ParMetaData(
+    val serializedSize: Int,
     val rhoHash: Blake2b256Hash,
-    locallyFreeFn: M[BitSet],
-    connectiveUsedFn: M[Boolean],
-    evalRequiredFn: M[Boolean],
-    substituteRequiredFn: M[Boolean]
-) {
-  lazy val serializedSize: M[Int]         = serializedSizeFn
-  lazy val locallyFree: M[BitSet]         = locallyFreeFn
-  lazy val connectiveUsed: M[Boolean]     = connectiveUsedFn
-  lazy val evalRequired: M[Boolean]       = evalRequiredFn
-  lazy val substituteRequired: M[Boolean] = substituteRequiredFn
-}
+    val locallyFree: BitSet,
+    val connectiveUsed: Boolean,
+    val evalRequired: Boolean,
+    val substituteRequired: Boolean
+)
 
-class SortedParSeq(private val sortedData: Seq[Par]) {
+final case class SortedParSeq(private val sortedData: Seq[Par]) {
   def add(element: Par): SortedParSeq = {
     val index = sortedData.indexWhere(_.rhoHash.bytes >= element.rhoHash.bytes)
     if (index == -1) {

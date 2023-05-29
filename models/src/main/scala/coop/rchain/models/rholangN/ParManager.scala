@@ -1,19 +1,18 @@
 package coop.rchain.models.rholangN
 
 import cats.effect.Sync
-import cats.implicits._
 import com.google.protobuf.{CodedInputStream, CodedOutputStream}
-import coop.rchain.catscontrib.effect.implicits.sEval
 import coop.rchain.rspace.hashing.Blake2b256Hash
 import scodec.bits.ByteVector
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, OutputStream}
-import scala.annotation.unused
+import java.lang.Math.floorDiv
 import scala.collection.immutable.BitSet
+import coop.rchain.catscontrib.effect.implicits.sEval
+import cats.implicits._
 
 object ParManager {
   type M[T] = cats.Eval[T]
-  @inline private def lazyM[T](f: T): M[T] = cats.Eval.later(f)
 
   def parToBytes(p: Par): ByteVector = {
     val baos = new ByteArrayOutputStream(p.serializedSize)
@@ -32,73 +31,68 @@ object ParManager {
   }
 
   object Constructor {
+    import SerializedSize._
+    import RhoHash._
+    import LocallyFree._
     import ConnectiveUsed._
     import EvalRequired._
-    import LocallyFree._
-    import RhoHash._
-    import SerializedSize._
     import SubstituteRequired._
 
     def createParProc(ps: Seq[Par]): ParProc = createParProc(SortedParSeq(ps))
 
     def createParProc(sortedPs: SortedParSeq): ParProc = {
-      val meta = new ParMetaData(
-        lazyM(sizeParProc(sortedPs)),
-        hashParProc(sortedPs),
-        lazyM(locallyFreeParProc(sortedPs)),
-        lazyM(connectiveUsedParProc(sortedPs)),
-        lazyM(evalRequiredParProc(sortedPs)),
-        lazyM(substituteRequiredParProc(sortedPs))
-      )
+      val size = sizeParProc(sortedPs)
+      val hash = hashParProc(sortedPs)
+      val lf   = locallyFreeParProc(sortedPs)
+      val cu   = connectiveUsedParProc(sortedPs)
+      val er   = evalRequiredParProc(sortedPs)
+      val sr   = substituteRequiredParProc(sortedPs)
+      val meta = new ParMetaData(size, hash, lf, cu, er, sr)
       new ParProc(sortedPs, meta)
     }
 
     def createGNil: GNil = {
-      val meta = new ParMetaData(
-        lazyM(sizeGNil()),
-        hashGNil(),
-        lazyM(locallyFreeGNil()),
-        lazyM(connectiveUsedGNil()),
-        lazyM(evalRequiredGNil()),
-        lazyM(substituteRequiredGNil())
-      )
+      val size = sizeGNil()
+      val hash = hashGNil()
+      val lf   = locallyFreeGNil()
+      val cu   = connectiveUsedGNil()
+      val er   = evalRequiredGNil()
+      val sr   = substituteRequiredGNil()
+      val meta = new ParMetaData(size, hash, lf, cu, er, sr)
       new GNil(meta)
     }
 
     def createGInt(v: Long): GInt = {
-      val meta = new ParMetaData(
-        lazyM(sizeGInt(v)),
-        hashGInt(v),
-        lazyM(locallyFreeGInt(v)),
-        lazyM(connectiveUsedGInt(v)),
-        lazyM(evalRequiredGInt(v)),
-        lazyM(substituteRequiredGInt(v))
-      )
+      val size = sizeGInt(v)
+      val hash = hashGInt(v)
+      val lf   = locallyFreeGInt(v)
+      val cu   = connectiveUsedGInt(v)
+      val er   = evalRequiredGInt(v)
+      val sr   = substituteRequiredGInt(v)
+      val meta = new ParMetaData(size, hash, lf, cu, er, sr)
       new GInt(v, meta)
     }
 
     def createEList(ps: Seq[Par]): EList = {
-      val meta = new ParMetaData(
-        lazyM(sizeEList(ps)),
-        hashEList(ps),
-        lazyM(locallyFreeEList(ps)),
-        lazyM(connectiveUsedEList(ps)),
-        lazyM(evalRequiredEList(ps)),
-        lazyM(substituteRequiredEList(ps))
-      )
+      val size = sizeEList(ps)
+      val hash = hashEList(ps)
+      val lf   = locallyFreeEList(ps)
+      val cu   = connectiveUsedEList(ps)
+      val er   = evalRequiredEList(ps)
+      val sr   = substituteRequiredEList(ps)
+      val meta = new ParMetaData(size, hash, lf, cu, er, sr)
       new EList(ps, meta)
     }
 
     def createSend(chan: Par, data: Seq[Par], persistent: Boolean): Send = {
       val sortedData = SortedParSeq(data)
-      val meta = new ParMetaData(
-        lazyM(sizeSend(chan, sortedData, persistent)),
-        hashSend(chan, sortedData, persistent),
-        lazyM(locallyFreeSend(chan, sortedData, persistent)),
-        lazyM(connectiveUsedSend(chan, sortedData, persistent)),
-        lazyM(evalRequiredSend(chan, sortedData, persistent)),
-        lazyM(substituteRequiredSend(chan, sortedData, persistent))
-      )
+      val size       = sizeSend(chan, sortedData, persistent)
+      val hash       = hashSend(chan, sortedData, persistent)
+      val lf         = locallyFreeSend(chan, sortedData, persistent)
+      val cu         = connectiveUsedSend(chan, sortedData, persistent)
+      val er         = evalRequiredSend(chan, sortedData, persistent)
+      val sr         = substituteRequiredSend(chan, sortedData, persistent)
+      val meta       = new ParMetaData(size, hash, lf, cu, er, sr)
       new Send(chan, sortedData, persistent, meta)
     }
   }
@@ -118,7 +112,6 @@ object ParManager {
 
   private object RhoHash {
     import Constants._
-
     import java.util.concurrent.atomic.AtomicInteger
 
     private class Hashable(val tag: Byte, val bodySize: Int) {
@@ -241,7 +234,7 @@ object ParManager {
       tagSize + lengthSize + psSize
     }
 
-    def sizeSend(chan: Par, data: SortedParSeq, @unused persistent: Boolean): Int = {
+    def sizeSend(chan: Par, data: SortedParSeq, persistent: Boolean): Int = {
       val tagSize        = sizeTag()
       val chanSize       = sizePar(chan)
       val dataLengthSize = sizeLength(data.size)
@@ -259,11 +252,11 @@ object ParManager {
 
     def locallyFreeGNil(): BitSet = BitSet()
 
-    def locallyFreeGInt(@unused v: Long): BitSet = BitSet()
+    def locallyFreeGInt(v: Long): BitSet = BitSet()
 
     def locallyFreeEList(ps: Seq[Par]): BitSet = locallyFreeParSeq(ps)
 
-    def locallyFreeSend(chan: Par, data: SortedParSeq, @unused persistent: Boolean): BitSet =
+    def locallyFreeSend(chan: Par, data: SortedParSeq, persistent: Boolean): BitSet =
       chan.locallyFree | locallyFreeParSeq(data.toSeq)
   }
 
@@ -275,11 +268,11 @@ object ParManager {
 
     def connectiveUsedGNil(): Boolean = false
 
-    def connectiveUsedGInt(@unused v: Long): Boolean = false
+    def connectiveUsedGInt(v: Long): Boolean = false
 
     def connectiveUsedEList(ps: Seq[Par]): Boolean = cUsedParSeq(ps)
 
-    def connectiveUsedSend(chan: Par, data: SortedParSeq, @unused persistent: Boolean): Boolean =
+    def connectiveUsedSend(chan: Par, data: SortedParSeq, persistent: Boolean): Boolean =
       chan.connectiveUsed || cUsedParSeq(data.toSeq)
   }
 
@@ -291,15 +284,11 @@ object ParManager {
 
     def evalRequiredGNil(): Boolean = false
 
-    def evalRequiredGInt(@unused v: Long): Boolean = false
+    def evalRequiredGInt(v: Long): Boolean = false
 
     def evalRequiredEList(ps: Seq[Par]): Boolean = eRequiredParSeq(ps)
 
-    def evalRequiredSend(
-        @unused chan: Par,
-        data: SortedParSeq,
-        @unused persistent: Boolean
-    ): Boolean =
+    def evalRequiredSend(chan: Par, data: SortedParSeq, persistent: Boolean): Boolean =
       eRequiredParSeq(data.toSeq)
   }
 
@@ -311,15 +300,11 @@ object ParManager {
 
     def substituteRequiredGNil(): Boolean = false
 
-    def substituteRequiredGInt(@unused v: Long): Boolean = false
+    def substituteRequiredGInt(v: Long): Boolean = false
 
     def substituteRequiredEList(ps: Seq[Par]): Boolean = sRequiredParSeq(ps)
 
-    def substituteRequiredSend(
-        @unused chan: Par,
-        data: SortedParSeq,
-        @unused persistent: Boolean
-    ): Boolean =
+    def substituteRequiredSend(chan: Par, data: SortedParSeq, persistent: Boolean): Boolean =
       sRequiredParSeq(data.toSeq)
   }
 
