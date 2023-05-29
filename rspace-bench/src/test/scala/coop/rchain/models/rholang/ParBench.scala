@@ -48,6 +48,15 @@ class ParBench {
     Par(exprs = Seq.tabulate(n)(el))
   }
 
+  final def appendTest(n: Int): Par = {
+    val elSize = 33
+    def el(i: Int) = EListBody(EList(Seq.fill(elSize)(GInt(i.toLong))))
+    val seq = Seq.tabulate(n)(el)
+    seq.foldLeft(Par()) { (acc, p) =>
+      acc.addExprs(p)
+    }
+  }
+
   var maxRecursionDepth: Int     = _
   var nestedPar: Par             = _
   var nestedAnotherPar: Par      = _
@@ -164,5 +173,12 @@ class ParBench {
   @OutputTimeUnit(TimeUnit.NANOSECONDS)
   def parProcAdd(): Unit = {
     val _ = parProc.addExprs(GInt(0))
+  }
+
+  @Benchmark
+  @BenchmarkMode(Array(Mode.AverageTime))
+  @OutputTimeUnit(TimeUnit.NANOSECONDS)
+  def manyAppends(): Unit = {
+    val _ = appendTest(1000)
   }
 }
