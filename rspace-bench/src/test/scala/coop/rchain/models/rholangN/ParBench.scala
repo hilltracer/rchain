@@ -13,23 +13,6 @@ import scala.annotation.tailrec
 @State(Scope.Benchmark)
 class ParBench {
 
-  def findMaxRecursionDepth(): Int = {
-    def count(i: Int): Int =
-      try {
-        count(i + 1) //apparently, the try-catch is enough for tailrec to not work. Lucky!
-      } catch {
-        case _: StackOverflowError => i
-      }
-
-    println("About to find max recursion depth for this test run")
-    val maxDepth = count(0)
-    println(s"Calculated max recursion depth is $maxDepth")
-    // Because of OOM errors on CI depth recursion is limited
-    val maxDepthLimited = Math.min(1000, maxDepth)
-    println(s"Used recursion depth is limited to $maxDepthLimited")
-    maxDepthLimited
-  }
-
   @tailrec
   final def createNestedPar(n: Int, par: Par = GInt(0)): Par =
     if (n == 0) par
@@ -42,20 +25,29 @@ class ParBench {
     ParProc(seq)
   }
 
-  var maxRecursionDepth: Int     = _
+  final def appendTest(n: Int): Par = {
+    val elSize     = 33
+    def el(i: Int) = EList(Seq.fill(elSize)(GInt(i.toLong)))
+
+    val seq = Seq.tabulate(n)(el)
+    seq.foldLeft(ParProc(Seq())) { (acc, p) =>
+      acc.add(p)
+    }
+  }
+  val nestedSize: Int            = 500
   var nestedPar: Par             = _
   var nestedAnotherPar: Par      = _
   var nestedParSData: ByteVector = _
 
-  val parProcSize: Int         = 1000
+  val parProcSize: Int         = 500
   var parProc: Par             = _
   var parProcAnother: Par      = _
   var parProcSData: ByteVector = _
-  @Setup(Level.Trial)
+
+  @Setup(Level.Iteration)
   def setup(): Unit = {
-    maxRecursionDepth = findMaxRecursionDepth()
-    nestedPar = createNestedPar(maxRecursionDepth)
-    nestedAnotherPar = createNestedPar(maxRecursionDepth)
+    nestedPar = createNestedPar(nestedSize)
+    nestedAnotherPar = createNestedPar(nestedSize)
     nestedParSData = nestedPar.toBytes
 
     parProc = createParProc(parProcSize)
@@ -67,7 +59,7 @@ class ParBench {
   @BenchmarkMode(Array(Mode.AverageTime))
   @OutputTimeUnit(TimeUnit.NANOSECONDS)
   def nestedCreation(): Unit = {
-    val _ = createNestedPar(maxRecursionDepth)
+    val _ = createNestedPar(nestedSize)
   }
 
   @Benchmark
@@ -160,5 +152,12 @@ class ParBench {
       case proc: ParProc => proc.add(GInt(0))
       case _             => assert(false)
     }
+  }
+
+  @Benchmark
+  @BenchmarkMode(Array(Mode.AverageTime))
+  @OutputTimeUnit(TimeUnit.NANOSECONDS)
+  def manyAppends(): Unit = {
+    val _ = appendTest(parProcSize)
   }
 }

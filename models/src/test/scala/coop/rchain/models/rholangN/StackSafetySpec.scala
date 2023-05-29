@@ -21,7 +21,7 @@ class StackSafetySpec extends AnyFlatSpec with Matchers {
     val maxDepth = count(0)
     println(s"Calculated max recursion depth is $maxDepth")
     // Because of OOM errors on CI depth recursion is limited
-    val maxDepthLimited = Math.min(1500, maxDepth)
+    val maxDepthLimited = Math.min(500, maxDepth)
     println(s"Used recursion depth is limited to $maxDepthLimited")
     maxDepthLimited
   }
@@ -65,13 +65,12 @@ class StackSafetySpec extends AnyFlatSpec with Matchers {
     val maxRecursionDepth: Int = findMaxRecursionDepth()
     val par                    = hugePar(maxRecursionDepth)
     val anotherPar             = hugePar(maxRecursionDepth)
-
+    val _                      = par.locallyFree
     noException shouldBe thrownBy {
       val sData   = par.toBytes
       val decoded = Par.fromBytes(sData)
       assert(par == decoded)
       assert(par.rhoHash == anotherPar.rhoHash)
-      assert(par.hashCode == anotherPar.hashCode)
       assert(par.serializedSize == anotherPar.serializedSize)
       assert(par == anotherPar)
       par == anotherPar

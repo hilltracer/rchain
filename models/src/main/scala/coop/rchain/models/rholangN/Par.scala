@@ -11,14 +11,13 @@ sealed trait Par {
   protected def meta: ParMetaData
 
   override def equals(x: Any): Boolean = ParManager.equals(this, x)
-  override def hashCode: Int           = meta.rhoHash.hashCode()
 
-  def serializedSize: Int         = meta.serializedSize
-  def rhoHash: Blake2b256Hash     = meta.rhoHash
-  def locallyFree: BitSet         = meta.locallyFree
-  def connectiveUsed: Boolean     = meta.connectiveUsed
-  def evalRequired: Boolean       = meta.evalRequired
-  def substituteRequired: Boolean = meta.substituteRequired
+  lazy val serializedSize: Int         = meta.serializedSizeFn()
+  lazy val rhoHash: Blake2b256Hash     = meta.rhoHashFn()
+  lazy val locallyFree: BitSet         = meta.locallyFreeFn()
+  lazy val connectiveUsed: Boolean     = meta.connectiveUsedFn()
+  lazy val evalRequired: Boolean       = meta.evalRequiredFn()
+  lazy val substituteRequired: Boolean = meta.substituteRequiredFn()
 
   def toBytes: ByteVector = parToBytes(this)
 }
@@ -27,12 +26,11 @@ object Par {
 }
 sealed trait Expr extends Par
 
-class ParProc(val ps: SortedParSeq, protected val meta: ParMetaData) extends Par {
-  def add(p: Par): ParProc = ParProc(ps.add(p))
+class ParProc(val ps: Seq[Par], protected val meta: ParMetaData) extends Par {
+  def add(p: Par): ParProc = ParProc(ps :+ p)
 }
 object ParProc {
-  def apply(ps: Seq[Par]): ParProc           = createParProc(ps)
-  def apply(sortedPs: SortedParSeq): ParProc = createParProc(sortedPs)
+  def apply(ps: Seq[Par]): ParProc = createParProc(ps)
 }
 
 final class GNil(protected val meta: ParMetaData) extends Par
@@ -50,7 +48,7 @@ object EList {
 
 final class Send(
     val chan: Par,
-    val data: SortedParSeq,
+    val data: Seq[Par],
     val persistent: Boolean,
     protected val meta: ParMetaData
 ) extends Par
@@ -60,45 +58,10 @@ object Send {
 }
 
 final class ParMetaData(
-    val serializedSize: Int,
-    val rhoHash: Blake2b256Hash,
-    val locallyFree: BitSet,
-    val connectiveUsed: Boolean,
-    val evalRequired: Boolean,
-    val substituteRequired: Boolean
+    val serializedSizeFn: () => Int,
+    val rhoHashFn: () => Blake2b256Hash,
+    val locallyFreeFn: () => BitSet,
+    val connectiveUsedFn: () => Boolean,
+    val evalRequiredFn: () => Boolean,
+    val substituteRequiredFn: () => Boolean
 )
-
-class SortedParSeq(private val sortedData: Seq[Par]) {
-  def add(element: Par): SortedParSeq = {
-    val index = sortedData.indexWhere(_.rhoHash.bytes >= element.rhoHash.bytes)
-    if (index == -1) {
-      new SortedParSeq(sortedData :+ element)
-    } else {
-      new SortedParSeq(sortedData.patch(index, Seq(element), 0))
-    }
-  }
-  def merge(other: SortedParSeq): SortedParSeq =
-    new SortedParSeq(
-      (sortedData ++ other.sortedData).sorted(Ordering.by((p: Par) => p.rhoHash.bytes))
-    )
-  def remove(element: Par): SortedParSeq = {
-    val index = sortedData.indexWhere(_.rhoHash.bytes == element.rhoHash.bytes)
-    if (index != -1) {
-      new SortedParSeq(sortedData.patch(index, Nil, 1))
-    } else {
-      this
-    }
-  }
-  def foreach(f: Par => Unit): Unit = sortedData.foreach(f)
-  def size: Int                     = sortedData.size
-  def toSeq: Seq[Par]               = sortedData
-}
-
-object SortedParSeq {
-  // From presorted Seq[Par]
-  def fromSorted(SortedParSeq: Seq[Par]): SortedParSeq =
-    new SortedParSeq(SortedParSeq)
-  // From unsorted Seq[Par]
-  def apply(elements: Seq[Par]): SortedParSeq =
-    new SortedParSeq(elements.sorted(Ordering.by((p: Par) => p.rhoHash.bytes)))
-}
