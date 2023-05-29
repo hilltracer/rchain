@@ -11,14 +11,14 @@ sealed trait Par {
   protected def meta: ParMetaData
 
   override def equals(x: Any): Boolean = ParManager.equals(this, x)
-  override def hashCode: Int           = meta.rhoHash.hashCode()
+  override def hashCode: Int           = rhoHash.hashCode()
 
-  def serializedSize: Int         = meta.serializedSize
-  def rhoHash: Blake2b256Hash     = meta.rhoHash
-  def locallyFree: BitSet         = meta.locallyFree
-  def connectiveUsed: Boolean     = meta.connectiveUsed
-  def evalRequired: Boolean       = meta.evalRequired
-  def substituteRequired: Boolean = meta.substituteRequired
+  lazy val serializedSize: Int         = meta.serializedSize.value
+  lazy val rhoHash: Blake2b256Hash     = meta.rhoHash.value
+  lazy val locallyFree: BitSet         = meta.locallyFree.value
+  lazy val connectiveUsed: Boolean     = meta.connectiveUsed.value
+  lazy val evalRequired: Boolean       = meta.evalRequired.value
+  lazy val substituteRequired: Boolean = meta.substituteRequired.value
 
   def toBytes: ByteVector = parToBytes(this)
 }
@@ -60,13 +60,20 @@ object Send {
 }
 
 final case class ParMetaData(
-    val serializedSize: Int,
-    val rhoHash: Blake2b256Hash,
-    val locallyFree: BitSet,
-    val connectiveUsed: Boolean,
-    val evalRequired: Boolean,
-    val substituteRequired: Boolean
-)
+    serializedSizeFn: M[Int],
+    rhoHashFn: M[Blake2b256Hash],
+    locallyFreeFn: M[BitSet],
+    connectiveUsedFn: M[Boolean],
+    evalRequiredFn: M[Boolean],
+    substituteRequiredFn: M[Boolean]
+) {
+  lazy val serializedSize: M[Int]         = serializedSizeFn
+  lazy val rhoHash: M[Blake2b256Hash]     = rhoHashFn
+  lazy val locallyFree: M[BitSet]         = locallyFreeFn
+  lazy val connectiveUsed: M[Boolean]     = connectiveUsedFn
+  lazy val evalRequired: M[Boolean]       = evalRequiredFn
+  lazy val substituteRequired: M[Boolean] = substituteRequiredFn
+}
 
 final case class SortedParSeq(private val sortedData: Seq[Par]) {
   def add(element: Par): SortedParSeq = {
