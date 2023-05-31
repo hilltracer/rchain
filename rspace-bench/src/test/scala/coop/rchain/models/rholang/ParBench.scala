@@ -49,9 +49,9 @@ class ParBench {
   }
 
   final def appendTest(n: Int): Par = {
-    val elSize = 33
+    val elSize     = 33
     def el(i: Int) = EListBody(EList(Seq.fill(elSize)(GInt(i.toLong))))
-    val seq = Seq.tabulate(n)(el)
+    val seq        = Seq.tabulate(n)(el)
     seq.foldLeft(Par()) { (acc, p) =>
       acc.addExprs(p)
     }

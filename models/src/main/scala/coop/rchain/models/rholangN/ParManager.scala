@@ -13,7 +13,7 @@ import scala.collection.immutable.BitSet
 
 object ParManager {
   type M[T] = cats.Eval[T]
-  @inline private def lazyM[T](f: T): M[T] = cats.Eval.later(f)
+  @inline private def lazyM[T](f: => T): M[T] = cats.Eval.later(f)
 
   def parToBytes(p: Par): ByteVector = {
     val baos = new ByteArrayOutputStream(p.serializedSize)
@@ -39,18 +39,16 @@ object ParManager {
     import SerializedSize._
     import SubstituteRequired._
 
-    def createParProc(ps: Seq[Par]): ParProc = createParProc(SortedParSeq(ps))
-
-    def createParProc(sortedPs: SortedParSeq): ParProc = {
+    def createParProc(ps: Seq[Par]): ParProc = {
       val meta = new ParMetaData(
-        lazyM(sizeParProc(sortedPs)),
-        lazyM(hashParProc(sortedPs)),
-        lazyM(locallyFreeParProc(sortedPs)),
-        lazyM(connectiveUsedParProc(sortedPs)),
-        lazyM(evalRequiredParProc(sortedPs)),
-        lazyM(substituteRequiredParProc(sortedPs))
+        lazyM(sizeParProc(ps)),
+        lazyM(hashParProc(ps)),
+        lazyM(locallyFreeParProc(ps)),
+        lazyM(connectiveUsedParProc(ps)),
+        lazyM(evalRequiredParProc(ps)),
+        lazyM(substituteRequiredParProc(ps))
       )
-      new ParProc(sortedPs, meta)
+      new ParProc(ps, meta)
     }
 
     def createGNil: GNil = {
@@ -90,16 +88,15 @@ object ParManager {
     }
 
     def createSend(chan: Par, data: Seq[Par], persistent: Boolean): Send = {
-      val sortedData = SortedParSeq(data)
       val meta = new ParMetaData(
-        lazyM(sizeSend(chan, sortedData, persistent)),
-        lazyM(hashSend(chan, sortedData, persistent)),
-        lazyM(locallyFreeSend(chan, sortedData, persistent)),
-        lazyM(connectiveUsedSend(chan, sortedData, persistent)),
-        lazyM(evalRequiredSend(chan, sortedData, persistent)),
-        lazyM(substituteRequiredSend(chan, sortedData, persistent))
+        lazyM(sizeSend(chan, data, persistent)),
+        lazyM(hashSend(chan, data, persistent)),
+        lazyM(locallyFreeSend(chan, data, persistent)),
+        lazyM(connectiveUsedSend(chan, data, persistent)),
+        lazyM(evalRequiredSend(chan, data, persistent)),
+        lazyM(substituteRequiredSend(chan, data, persistent))
       )
-      new Send(chan, sortedData, persistent, meta)
+      new Send(chan, data, persistent, meta)
     }
   }
 
@@ -118,6 +115,7 @@ object ParManager {
 
   private object RhoHash {
     import Constants._
+    import Sorting._
 
     import java.util.concurrent.atomic.AtomicInteger
 
@@ -172,10 +170,10 @@ object ParManager {
       def apply(tag: Byte, size: Int): Hashable = new Hashable(tag, size)
     }
 
-    def hashParProc(ps: SortedParSeq): Blake2b256Hash = {
+    def hashParProc(ps: Seq[Par]): Blake2b256Hash = {
       val bodySize = hashSize * ps.size
       val hashable = Hashable(PARPROC, bodySize)
-      ps.foreach(hashable.appendParHash)
+      sort(ps).foreach(hashable.appendParHash)
       hashable.calcHash
     }
 
@@ -201,13 +199,13 @@ object ParManager {
       hashable.calcHash
     }
 
-    def hashSend(chan: Par, data: SortedParSeq, persistent: Boolean): Blake2b256Hash = {
+    def hashSend(chan: Par, data: Seq[Par], persistent: Boolean): Blake2b256Hash = {
       def booleanToByte(v: Boolean): Byte = if (v) 1 else 0
 
       val bodySize = hashSize * (data.size + 1) + booleanSize
       val hashable = Hashable(SEND, bodySize)
       hashable.appendParHash(chan)
-      data.foreach(hashable.appendParHash)
+      sort(data).foreach(hashable.appendParHash)
       hashable.appendByte(booleanToByte(persistent))
       hashable.calcHash
     }
@@ -223,10 +221,10 @@ object ParManager {
     private def sizePar(p: Par): Int        = p.serializedSize
     private def sizePars(ps: Seq[Par]): Int = ps.map(sizePar).sum
 
-    def sizeParProc(ps: SortedParSeq): Int = {
+    def sizeParProc(ps: Seq[Par]): Int = {
       val tagSize    = sizeTag()
       val lengthSize = sizeLength(ps.size)
-      val psSize     = sizePars(ps.toSeq)
+      val psSize     = sizePars(ps)
       tagSize + lengthSize + psSize
     }
 
@@ -241,21 +239,25 @@ object ParManager {
       tagSize + lengthSize + psSize
     }
 
-    def sizeSend(chan: Par, data: SortedParSeq, @unused persistent: Boolean): Int = {
+    def sizeSend(chan: Par, data: Seq[Par], @unused persistent: Boolean): Int = {
       val tagSize        = sizeTag()
       val chanSize       = sizePar(chan)
       val dataLengthSize = sizeLength(data.size)
-      val dataSize       = sizePars(data.toSeq)
+      val dataSize       = sizePars(data)
       val persistentSize = sizeBool()
       tagSize + chanSize + dataLengthSize + dataSize + persistentSize
     }
+  }
+
+  private object Sorting {
+    def sort(seq: Seq[Par]): Seq[Par] = seq.sorted(Ordering.by((p: Par) => p.rhoHash.bytes))
   }
 
   private object LocallyFree {
     private def locallyFreeParSeq(ps: Seq[Par]) =
       ps.foldLeft(BitSet())((acc, p) => acc | p.locallyFree)
 
-    def locallyFreeParProc(ps: SortedParSeq): BitSet = locallyFreeParSeq(ps.toSeq)
+    def locallyFreeParProc(ps: Seq[Par]): BitSet = locallyFreeParSeq(ps)
 
     def locallyFreeGNil(): BitSet = BitSet()
 
@@ -263,15 +265,15 @@ object ParManager {
 
     def locallyFreeEList(ps: Seq[Par]): BitSet = locallyFreeParSeq(ps)
 
-    def locallyFreeSend(chan: Par, data: SortedParSeq, @unused persistent: Boolean): BitSet =
-      chan.locallyFree | locallyFreeParSeq(data.toSeq)
+    def locallyFreeSend(chan: Par, data: Seq[Par], @unused persistent: Boolean): BitSet =
+      chan.locallyFree | locallyFreeParSeq(data)
   }
 
   private object ConnectiveUsed {
     private def cUsedParSeq(ps: Seq[Par]) =
       ps.exists(_.connectiveUsed)
 
-    def connectiveUsedParProc(ps: SortedParSeq): Boolean = cUsedParSeq(ps.toSeq)
+    def connectiveUsedParProc(ps: Seq[Par]): Boolean = cUsedParSeq(ps)
 
     def connectiveUsedGNil(): Boolean = false
 
@@ -279,15 +281,15 @@ object ParManager {
 
     def connectiveUsedEList(ps: Seq[Par]): Boolean = cUsedParSeq(ps)
 
-    def connectiveUsedSend(chan: Par, data: SortedParSeq, @unused persistent: Boolean): Boolean =
-      chan.connectiveUsed || cUsedParSeq(data.toSeq)
+    def connectiveUsedSend(chan: Par, data: Seq[Par], @unused persistent: Boolean): Boolean =
+      chan.connectiveUsed || cUsedParSeq(data)
   }
 
   private object EvalRequired {
     private def eRequiredParSeq(ps: Seq[Par]) =
       ps.exists(_.evalRequired)
 
-    def evalRequiredParProc(ps: SortedParSeq): Boolean = eRequiredParSeq(ps.toSeq)
+    def evalRequiredParProc(ps: Seq[Par]): Boolean = eRequiredParSeq(ps)
 
     def evalRequiredGNil(): Boolean = false
 
@@ -297,17 +299,17 @@ object ParManager {
 
     def evalRequiredSend(
         @unused chan: Par,
-        data: SortedParSeq,
+        data: Seq[Par],
         @unused persistent: Boolean
     ): Boolean =
-      eRequiredParSeq(data.toSeq)
+      eRequiredParSeq(data)
   }
 
   private object SubstituteRequired {
     private def sRequiredParSeq(ps: Seq[Par]) =
       ps.exists(_.substituteRequired)
 
-    def substituteRequiredParProc(ps: SortedParSeq): Boolean = sRequiredParSeq(ps.toSeq)
+    def substituteRequiredParProc(ps: Seq[Par]): Boolean = sRequiredParSeq(ps)
 
     def substituteRequiredGNil(): Boolean = false
 
@@ -317,14 +319,15 @@ object ParManager {
 
     def substituteRequiredSend(
         @unused chan: Par,
-        data: SortedParSeq,
+        data: Seq[Par],
         @unused persistent: Boolean
     ): Boolean =
-      sRequiredParSeq(data.toSeq)
+      sRequiredParSeq(data)
   }
 
   private object Codecs {
     import Constants._
+    import Sorting._
 
     def serialize[F[_]: Sync](par: Par, output: OutputStream): F[Unit] = {
       val cos = CodedOutputStream.newInstance(output)
@@ -342,7 +345,7 @@ object ParManager {
             for {
               _ <- writeTag(PARPROC)
               _ <- writeLength(parProc.ps.size)
-              _ <- writePars(parProc.ps.toSeq)
+              _ <- writePars(sort(parProc.ps))
             } yield ()
 
           case _: GNil =>
@@ -366,7 +369,7 @@ object ParManager {
               _ <- writeTag(SEND)
               _ <- writePar(send.chan)
               _ <- writeLength(send.data.size)
-              _ <- writePars(send.data.toSeq)
+              _ <- writePars(sort(send.data))
               _ <- writeBool(send.persistent)
             } yield ()
 
