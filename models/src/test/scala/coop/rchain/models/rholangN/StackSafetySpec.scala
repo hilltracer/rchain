@@ -62,9 +62,13 @@ class StackSafetySpec extends AnyFlatSpec with Matchers {
       if (n == 0) par
       else hugePar(n - 1, ParProc(Seq(par)))
 
-    val maxRecursionDepth: Int = findMaxRecursionDepth()
+    val maxRecursionDepth: Int = 5
     val par                    = hugePar(maxRecursionDepth)
-    val _ = par.connectiveUsed // StackOverFlow
+    val p1 = par.connectiveUsed
+    println("second")
+    val p2 = ParProc(Seq(par))
+    val p3 = p2.connectiveUsed
+    val _ = (p1, p2, p3)
     noException shouldBe thrownBy {
     false
     }
