@@ -102,15 +102,18 @@ object Substitute {
 
   implicit def substitutePar[M[_]: Sync]: Substitute[M, Par] =
     new Substitute[M, Par] {
-      def subExp(exprs: Seq[Expr])(implicit depth: Int, env: Env[Par]): M[Par] =
-        exprs.toList.reverse.foldM(VectorPar()) { (par, expr) =>
-          expr.exprInstance match {
-            case EVarBody(e) =>
-              maybeSubstitute[M](e).map {
-                case Left(_e)    => par.prepend(_e, depth)
-                case Right(_par) => _par ++ par
+      def subExp(exprs: Seq[ExprN])(implicit depth: Int, env: Env[Par]): M[ParN] =
+        exprs.toList.reverse.foldM(NilN(): ParN) { (par, expr) =>
+          expr match {
+            case x: VarN =>
+              maybeSubstitute[M](toProtoVar(x)).map {
+                case Left(_e)    => par.combine(fromProtoVar(_e))
+                case Right(_par) => par.combine(fromProto(_par))
               }
-            case _ => substituteExpr[M].substituteNoSort(expr).map(par.prepend(_, depth))
+            case _ =>
+              substituteExpr[M]
+                .substituteNoSort(toProtoExpr(expr))
+                .map(x => par.combine(fromProtoExpr(x): ParN))
           }
         }
 
@@ -148,7 +151,7 @@ object Substitute {
       override def substituteNoSort(term: Par)(implicit depth: Int, env: Env[Par]): M[Par] =
         for {
           _           <- Sync[M].delay(()) // TODO why removing this breaks StackSafetySpec?
-          exprs       <- subExp(term.exprs)
+          exprs       <- subExp(term.exprs.map(fromProtoExpr)).map(toProto)
           connectives <- subConn(term.connectives)
           sends       <- term.sends.toVector.traverse(substituteSend[M].substituteNoSort(_))
           bundles     <- term.bundles.toVector.traverse(substituteBundle[M].substituteNoSort(_))
