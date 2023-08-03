@@ -5,7 +5,6 @@ import cats.syntax.all._
 import cats.{Applicative, Monad}
 import coop.rchain.models.Connective.ConnectiveInstance
 import coop.rchain.models.Connective.ConnectiveInstance._
-import coop.rchain.models.Expr.ExprInstance._
 import coop.rchain.models.Var.VarInstance._
 import coop.rchain.models._
 import coop.rchain.models.rholang.implicits._
@@ -103,7 +102,7 @@ object Substitute {
   implicit def substitutePar[M[_]: Sync]: Substitute[M, Par] =
     new Substitute[M, Par] {
       def subExp(exprs: Seq[ExprN])(implicit depth: Int, env: Env[Par]): M[ParN] =
-        exprs.toList.reverse.foldM(NilN(): ParN) { (par, expr) =>
+        exprs.toList.reverse.foldM(NilN: ParN) { (par, expr) =>
           expr match {
             case x: VarN =>
               maybeSubstitute[M](toProtoVar(x)).map {
@@ -117,34 +116,38 @@ object Substitute {
           }
         }
 
-      def subConn(conns: Seq[Connective])(implicit depth: Int, env: Env[Par]): M[Par] =
-        conns.toList.reverse.foldM(VectorPar()) { (par, conn) =>
-          conn.connectiveInstance match {
-            case VarRefBody(v) =>
-              maybeSubstitute[M](v).map {
-                case Left(_)       => par.prepend(conn, depth)
-                case Right(newPar) => newPar ++ par
+      private def toVarRefBody(x: ConnVarRefN): VarRefBody = {
+        val index = x.index
+        val depth = x.depth
+        VarRefBody(VarRef(index, depth))
+      }
+
+      def subConn(conns: Seq[ConnectiveN])(implicit depth: Int, env: Env[Par]): M[ParN] =
+        conns.toList.reverse.foldM(NilN: ParN) { (par, conn) =>
+          conn match {
+            case x: ConnVarRefN =>
+              maybeSubstitute[M](toVarRefBody(x).value).map {
+                case Left(_)       => par.combine(conn: ParN)
+                case Right(newPar) => par.combine(fromProto(newPar))
               }
-            case ConnectiveInstance.Empty => par.pure[M]
-            case ConnAndBody(ConnectiveBody(ps)) =>
-              ps.toVector
-                .traverse(substitutePar[M].substituteNoSort(_))
-                .map(ps => par.prepend(Connective(ConnAndBody(ConnectiveBody(ps))), depth))
-            case ConnOrBody(ConnectiveBody(ps)) =>
-              ps.toVector
-                .traverse(substitutePar[M].substituteNoSort(_))
-                .map(ps => par.prepend(Connective(ConnOrBody(ConnectiveBody(ps))), depth))
-            case ConnNotBody(p) =>
+            case x: ConnAndN =>
+              x.ps.toVector
+                .traverse(y => substitutePar[M].substituteNoSort(toProto(y)).map(fromProto))
+                .map(ps => par.combine(ConnAndN(ps)))
+            case x: ConnOrN =>
+              x.ps.toVector
+                .traverse(y => substitutePar[M].substituteNoSort(toProto(y)).map(fromProto))
+                .map(ps => par.combine(ConnOrN(ps)))
+            case x: ConnNotN =>
               substitutePar[M]
-                .substituteNoSort(p)
-                .map(p => Connective(ConnNotBody(p)))
-                .map(par.prepend(_, depth))
-            case c: ConnBool      => par.prepend(Connective(c), depth).pure[M]
-            case c: ConnInt       => par.prepend(Connective(c), depth).pure[M]
-            case c: ConnBigInt    => par.prepend(Connective(c), depth).pure[M]
-            case c: ConnString    => par.prepend(Connective(c), depth).pure[M]
-            case c: ConnUri       => par.prepend(Connective(c), depth).pure[M]
-            case c: ConnByteArray => par.prepend(Connective(c), depth).pure[M]
+                .substituteNoSort(toProto(x.p))
+                .map(p => par.combine(ConnNotN(fromProto(p))))
+            case _: ConnBoolN.type      => par.combine(ConnBoolN).pure[M]
+            case _: ConnIntN.type       => par.combine(ConnIntN).pure[M]
+            case _: ConnBigIntN.type    => par.combine(ConnBigIntN).pure[M]
+            case _: ConnStringN.type    => par.combine(ConnStringN).pure[M]
+            case _: ConnUriN.type       => par.combine(ConnUriN).pure[M]
+            case _: ConnByteArrayN.type => par.combine(ConnByteArrayN).pure[M]
           }
         }
 
@@ -152,7 +155,7 @@ object Substitute {
         for {
           _           <- Sync[M].delay(()) // TODO why removing this breaks StackSafetySpec?
           exprs       <- subExp(term.exprs.map(fromProtoExpr)).map(toProto)
-          connectives <- subConn(term.connectives)
+          connectives <- subConn(term.connectives.map(fromProtoConnective)).map(toProto)
           sends       <- term.sends.toVector.traverse(substituteSend[M].substituteNoSort(_))
           bundles     <- term.bundles.toVector.traverse(substituteBundle[M].substituteNoSort(_))
           receives    <- term.receives.toVector.traverse(substituteReceive[M].substituteNoSort(_))
