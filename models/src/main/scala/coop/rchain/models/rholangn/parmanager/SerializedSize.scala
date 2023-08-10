@@ -48,7 +48,11 @@ private[parmanager] object SerializedSize {
   def sSize(p: RhoTypeN): Eval[Int] = p match {
 
     /** Basic types */
-    case _: NilN.type => Eval.now(totalSize())
+    case _: NilN.type =>
+      Eval.now {
+        println("hello lazy!")
+        totalSize()
+      }
 
     case pProc: ParProcN =>
       sSize(pProc.ps).map(totalSize(_))
