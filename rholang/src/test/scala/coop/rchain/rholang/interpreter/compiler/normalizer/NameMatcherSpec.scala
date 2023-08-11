@@ -1,9 +1,9 @@
 package coop.rchain.rholang.interpreter.compiler.normalizer
 
 import cats.Eval
+import cats.implicits.catsSyntaxSemigroup
 import coop.rchain.catscontrib.effect.implicits.sEval
 import coop.rchain.models._
-import coop.rchain.models.rholangn.Bindings._
 import coop.rchain.models.rholangn._
 import coop.rchain.rholang.ast.rholang_mercury.Absyn._
 import coop.rchain.rholang.interpreter.compiler._
@@ -100,7 +100,7 @@ class NameMatcherSpec extends AnyFlatSpec with Matchers {
     val boundInputs =
       inputs.copy(boundMapChain = inputs.boundMapChain.put(("x", NameSort, SourcePosition(0, 0))))
     val result         = NameNormalizeMatcher.normalizeMatch[Eval](nqeval, boundInputs).value
-    val expectedResult = ParN.combine(BoundVarN(0), BoundVarN(0))
+    val expectedResult = (BoundVarN(0): ParN) |+| BoundVarN(0)
     result.par should be(expectedResult)
     result.freeMap should be(inputs.freeMap)
   }

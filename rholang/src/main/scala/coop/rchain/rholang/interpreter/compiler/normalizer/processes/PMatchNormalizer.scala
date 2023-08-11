@@ -60,7 +60,7 @@ object PMatchNormalizer {
                     )
     } yield {
       val m = MatchN(targetResult.par, casesResult._1.reverse)
-      ProcVisitOutputs(ParN.combine(input.par, m), casesResult._2)
+      ProcVisitOutputs(input.par |+| m, casesResult._2)
     }
   }
 }

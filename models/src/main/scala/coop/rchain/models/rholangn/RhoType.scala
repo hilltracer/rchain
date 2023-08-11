@@ -1,6 +1,8 @@
 package coop.rchain.models.rholangn
 
 import coop.rchain.models.rholangn.parmanager.Manager._
+import cats.Monoid
+import cats.syntax.semigroup._ //<+> syntax comes from here
 
 /** Base trait for Rholang elements in the Reducer */
 sealed trait RhoTypeN {
@@ -38,18 +40,44 @@ sealed trait ParN extends RhoTypeN
 object ParN {
   def fromBytes(bytes: Array[Byte]): ParN = parFromBytes(bytes)
   def toBytes(p: ParN): Array[Byte]       = parToBytes(p)
+  def compare(p1: ParN, p2: ParN): Int    = comparePars(p1, p2)
+  val ordering: Ordering[ParN]            = (p1: ParN, p2: ParN) => compare(p1, p2)
+
+  implicit val parNMonoid: Monoid[ParN] = new Monoid[ParN] {
+    def empty: ParN = NilN
+
+    /**
+      * Create a flatten parallel Par (ParProc) from two Pars.
+      * See [[makeParProc]] for more information.
+      */
+    def combine(p1: ParN, p2: ParN): ParN = makePProc(flatPs(Seq(p1, p2)))
+  }
+
+  private def flatPs(ps: Seq[ParN]): Seq[ParN] =
+    ps.flatMap {
+      case _: NilN.type => Seq()
+      case x: ParProcN  => flatPs(x.ps)
+      case p            => Seq(p)
+    }
+  private def makePProc(ps: Seq[ParN]): ParN = ps match {
+    case Nil      => NilN
+    case p :: Nil => p
+    case _        => ParProcN(ps)
+  }
 
   /**
-    * Create a flatten parallel Par (ParProc) from par sequence.
-    * See [[flattedPProc]] for more information.
+    * Create a flatten parallel Par (ParProc) from par sequence
+    * Flatting is the process of transforming ParProc(P, Q, ...):
+    * - empty data:  ParProc()  -> Nil
+    * - single data: ParProc(P) -> P
+    * - nil data:    ParProc(P, Q, Nil) -> ParProc(P, Q)
+    * - nested data  ParProc(ParProc(P,Q), ParProc(L,K)) -> ParProc(P, Q, L, K)
+    *
+    * @param ps initial par sequence to be executed in parallel
+    * @return
     */
-  def makeParProc(ps: Seq[ParN]): ParN = flattedPProc(ps)
+  def makeParProc(ps: Seq[ParN]): ParN = makePProc(flatPs(ps))
 
-  /** Combine two pars for their parallel execution */
-  def combine(p1: ParN, p2: ParN): ParN = combinePars(p1, p2)
-
-  def compare(p1: ParN, p2: ParN): Int = comparePars(p1, p2)
-  val ordering: Ordering[ParN]         = (p1: ParN, p2: ParN) => compare(p1, p2)
 }
 
 /** Basic rholang operations that can be executed in parallel*/

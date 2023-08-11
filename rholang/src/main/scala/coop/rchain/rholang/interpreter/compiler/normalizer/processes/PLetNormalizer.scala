@@ -202,7 +202,7 @@ object PLetNormalizer {
                             )
                           )
                         )
-                        ProcVisitOutputs(ParN.combine(input.par, m), continuationKnownFree)
+                        ProcVisitOutputs(input.par |+| m, continuationKnownFree)
                     }
                 }
             }

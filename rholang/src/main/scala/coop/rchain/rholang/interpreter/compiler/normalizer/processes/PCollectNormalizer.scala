@@ -20,6 +20,6 @@ object PCollectNormalizer {
       .normalizeMatch[F](p.collection_, CollectVisitInputs(input.boundMapChain, input.freeMap))
       .map { collectResult =>
         val expr = collectResult.expr
-        ProcVisitOutputs(ParN.combine(input.par, expr), collectResult.freeMap)
+        ProcVisitOutputs(input.par |+| expr, collectResult.freeMap)
       }
 }

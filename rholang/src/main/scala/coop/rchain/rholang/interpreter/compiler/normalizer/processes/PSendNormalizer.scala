@@ -45,7 +45,7 @@ object PSendNormalizer {
         case _: SendMultiple => true
       }
       send = SendN(nameMatchResult.par, dataResults._1, persistent)
-      par  = ParN.combine(input.par, send)
+      par  = input.par |+| send
     } yield ProcVisitOutputs(
       par,
       dataResults._2.freeMap

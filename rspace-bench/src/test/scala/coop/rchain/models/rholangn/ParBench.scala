@@ -1,5 +1,6 @@
 package coop.rchain.models.rholangn
 
+import cats.implicits.catsSyntaxSemigroup
 import org.openjdk.jmh.annotations._
 import scodec.bits.ByteVector
 
@@ -31,7 +32,7 @@ class ParBench {
 
     val seq = Seq.tabulate(n)(el)
     seq.foldLeft(NilN: ParN) { (acc, p) =>
-      ParN.combine(acc, p)
+      acc |+| p
     }
   }
   val nestedSize: Int             = 500
@@ -149,7 +150,7 @@ class ParBench {
   @OutputTimeUnit(TimeUnit.NANOSECONDS)
   def parProcAdd(): Unit = {
     val _ = parProc match {
-      case proc: ParProcN => ParN.combine(proc, GIntN(0))
+      case proc: ParProcN => (proc: ParN) |+| GIntN(0)
       case _              => assert(false)
     }
   }

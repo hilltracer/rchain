@@ -17,7 +17,7 @@ object PEvalNormalizer {
       .map(
         nameMatchResult =>
           ProcVisitOutputs(
-            ParN.combine(input.par, nameMatchResult.par),
+            input.par |+| nameMatchResult.par,
             nameMatchResult.freeMap
           )
       )

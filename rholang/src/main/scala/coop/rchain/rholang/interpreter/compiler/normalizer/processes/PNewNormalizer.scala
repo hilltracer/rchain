@@ -49,7 +49,7 @@ object PNewNormalizer {
         uri = uris,
         injections = env.map { case (s, par) => (s, fromProto(par)) }
       )
-      ProcVisitOutputs(ParN.combine(input.par, resultNew), bodyResult.freeMap)
+      ProcVisitOutputs(input.par |+| resultNew, bodyResult.freeMap)
     }
 
   }

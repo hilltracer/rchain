@@ -31,37 +31,6 @@ object Manager {
     Sorting.sortInjections(injections)
   def comparePars(p1: ParN, p2: ParN): Int = Sorting.comparePars(p1, p2)
 
-  private def flatPs(ps: Seq[ParN]): Seq[ParN] =
-    ps.flatMap {
-      case _: NilN.type => Seq()
-      case x: ParProcN  => flatPs(x.ps)
-      case p            => Seq(p)
-    }
-
-  private def makePProc(ps: Seq[ParN]): ParN = ps match {
-    case Nil      => NilN
-    case p :: Nil => p
-    case _        => ParProcN(ps)
-  }
-
-  /**
-    * Create a flatten parallel Par (ParProc) from par sequence
-    * Flatting is the process of transforming ParProc(P, Q, ...):
-    * - empty data:  ParProc()  -> Nil
-    * - single data: ParProc(P) -> P
-    * - nil data:    ParProc(P, Q, Nil) -> ParProc(P, Q)
-    * - nested data  ParProc(ParProc(P,Q), ParProc(L,K)) -> ParProc(P, Q, L, K)
-    * @param ps initial par sequence to be executed in parallel
-    * @return
-    */
-  def flattedPProc(ps: Seq[ParN]): ParN = makePProc(flatPs(ps))
-
-  /**
-    * Create a flatten parallel Par (ParProc) from two Pars.
-    * See [[flattedPProc]] for more information.
-    */
-  def combinePars(p1: ParN, p2: ParN): ParN = flattedPProc(Seq(p1, p2))
-
   /** MetaData */
   def rhoHashFn(p: RhoTypeN): Array[Byte]        = RhoHash.rhoHashFn(p)
   def serializedSizeFn(p: RhoTypeN): Int         = SerializedSize.serializedSizeFn(p)

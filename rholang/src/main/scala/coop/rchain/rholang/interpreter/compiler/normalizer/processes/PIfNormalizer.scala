@@ -34,6 +34,6 @@ object PIfNormalizer {
           MatchCaseN(GBoolN(false), falseCaseBody.par)
         )
       )
-    } yield ProcVisitOutputs(ParN.combine(input.par, desugaredIf), falseCaseBody.freeMap)
+    } yield ProcVisitOutputs(input.par |+| desugaredIf, falseCaseBody.freeMap)
 
 }

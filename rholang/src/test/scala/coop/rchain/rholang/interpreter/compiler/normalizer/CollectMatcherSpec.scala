@@ -1,9 +1,9 @@
 package coop.rchain.rholang.interpreter.compiler.normalizer
 
 import cats.Eval
+import cats.implicits.catsSyntaxSemigroup
 import coop.rchain.catscontrib.effect.implicits.sEval
 import coop.rchain.models._
-import coop.rchain.models.rholangn.Bindings._
 import coop.rchain.models.rholangn._
 import coop.rchain.rholang.ast.rholang_mercury.Absyn._
 import coop.rchain.rholang.interpreter.ParBuilderUtil
@@ -104,7 +104,7 @@ class CollectMatcherSpec extends AnyFlatSpec with Matchers {
 
     result.par should be(
       ESetN(
-        Seq(EPlusN(BoundVarN(1), FreeVarN(1)), GIntN(7), ParN.combine(GIntN(8), FreeVarN(2))),
+        Seq(EPlusN(BoundVarN(1), FreeVarN(1)), GIntN(7), (GIntN(8): ParN) |+| FreeVarN(2)),
         Some(FreeVarN(0))
       )
     )
