@@ -11,18 +11,18 @@ import scala.math.Ordered.orderingToOrdered
 sealed trait RhoTypeN {
 
   /** Cryptographic hash code of this object */
-  val rhoHash: Eval[Array[Byte]] = rhoHashFn(this).memoize
+  lazy val rhoHash: Eval[Array[Byte]] = rhoHashFn(this).memoize
 
   /** The size of serialized bytes lazily evaluated with memoization */
-  val serializedSize: Eval[Int] = serializedSizeFn(this).memoize
+  lazy val serializedSize: Eval[Int] = serializedSizeFn(this).memoize
 
   /** Serialized bytes lazily evaluated with memoization */
-  val serialized: Eval[Array[Byte]] = serializedFn(this, memoizeChildren = false).memoize
+  lazy val serialized: Eval[Array[Byte]] = serializedFn(this, memoizeChildren = false).memoize
 
   /** True if the object or at least one of the nested objects non-concrete.
     * Such a object cannot be viewed as if it were a term.*/
   // TODO: Rename connectiveUsed for more clarity
-  val connectiveUsed: Eval[Boolean] = connectiveUsedFn(this).memoize
+  lazy val connectiveUsed: Eval[Boolean] = connectiveUsedFn(this).memoize
 
   /** True if the object or at least one of the nested objects can be evaluated in Reducer */
   lazy val evalRequired: Boolean = evalRequiredFn(this)
