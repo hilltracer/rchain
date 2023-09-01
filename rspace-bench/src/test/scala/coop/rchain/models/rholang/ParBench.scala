@@ -12,11 +12,12 @@ import coop.rchain.models._
 import coop.rchain.models.serialization.implicits._
 import coop.rchain.shared.Serialize
 import coop.rchain.models.rholang.implicits._
+import coop.rchain.models.rholang.sorter.Sortable
 
 @Fork(value = 1)
 @Warmup(iterations = 5)
-@Measurement(iterations = 5)
-@OperationsPerInvocation(value = 100)
+@Measurement(iterations = 3)
+@OperationsPerInvocation(value = 10)
 @State(Scope.Benchmark)
 class ParBench {
 
@@ -40,24 +41,25 @@ class ParBench {
     }
   }
 
-  val nestedSize: Int            = 500
+  val nestedSize: Int            = 100
   var nestedPar: Par             = _
   var nestedAnotherPar: Par      = _
   var nestedParSData: ByteVector = _
 
-  val parProcSize: Int         = 500
+  val parProcSize: Int         = 100
   var parProc: Par             = _
   var parProcAnother: Par      = _
   var parProcSData: ByteVector = _
 
-  @Setup(Level.Iteration)
+  @Setup(Level.Invocation)
   def setup(): Unit = {
     nestedPar = createNestedPar(nestedSize)
     nestedAnotherPar = createNestedPar(nestedSize)
-    nestedParSData = Serialize[Par].encode(nestedPar)
+    nestedParSData = Serialize[Par].encode(createNestedPar(nestedSize))
 
     parProc = createParProc(parProcSize)
-    parProcSData = Serialize[Par].encode(parProc)
+    parProcAnother = createParProc(parProcSize)
+    parProcSData = Serialize[Par].encode(createParProc(parProcSize))
   }
 
   @Benchmark
@@ -112,6 +114,13 @@ class ParBench {
   @Benchmark
   @BenchmarkMode(Array(Mode.AverageTime))
   @OutputTimeUnit(TimeUnit.NANOSECONDS)
+  def nestedSort(): Unit = {
+    val _ = Sortable.sortMatch(nestedPar)
+  }
+
+  @Benchmark
+  @BenchmarkMode(Array(Mode.AverageTime))
+  @OutputTimeUnit(TimeUnit.NANOSECONDS)
   def parProcCreation(): Unit = {
     val _ = createParProc(parProcSize)
   }
@@ -156,6 +165,13 @@ class ParBench {
   @OutputTimeUnit(TimeUnit.NANOSECONDS)
   def parProcAdd(): Unit = {
     val _ = parProc.addExprs(GInt(0))
+  }
+
+  @Benchmark
+  @BenchmarkMode(Array(Mode.AverageTime))
+  @OutputTimeUnit(TimeUnit.NANOSECONDS)
+  def parProcSort(): Unit = {
+    val _ = Sortable.sortMatch(parProc)
   }
 
   @Benchmark

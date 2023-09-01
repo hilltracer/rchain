@@ -87,7 +87,7 @@ class ParBench {
   @BenchmarkMode(Array(Mode.AverageTime))
   @OutputTimeUnit(TimeUnit.NANOSECONDS)
   def nestedHash(): Unit = {
-    val _ = nestedPar.rhoHash
+    val _ = nestedPar.rhoHash.value
   }
 
   @Benchmark
@@ -134,7 +134,7 @@ class ParBench {
   @BenchmarkMode(Array(Mode.AverageTime))
   @OutputTimeUnit(TimeUnit.NANOSECONDS)
   def parProcHash(): Unit = {
-    val _ = parProc.rhoHash
+    val _ = parProc.rhoHash.value
   }
 
   @Benchmark
