@@ -8,8 +8,8 @@ import scala.annotation.tailrec
 
 @Fork(value = 1)
 @Warmup(iterations = 5)
-@Measurement(iterations = 5)
-@OperationsPerInvocation(value = 100)
+@Measurement(iterations = 3)
+@OperationsPerInvocation(value = 10)
 @State(Scope.Benchmark)
 class ParBench {
 
@@ -34,25 +34,26 @@ class ParBench {
       ParN.combine(acc, p)
     }
   }
-  val nestedSize: Int             = 500
-  var nestedPar: ParN             = _
-  var nestedAnotherPar: ParN      = _
-  var nestedParSData: Array[Byte] = _
+  val nestedSize: Int  = 100
+  val parProcSize: Int = 100
 
-  val parProcSize: Int          = 500
-  var parProc: ParN             = _
-  var parProcAnother: ParN      = _
-  var parProcSData: Array[Byte] = _
+  var nestedPar: ParN             = NilN
+  var nestedAnotherPar: ParN      = NilN
+  var nestedParSData: Array[Byte] = Array()
 
-  @Setup(Level.Iteration)
+  var parProc: ParN             = NilN
+  var parProcAnother: ParN      = NilN
+  var parProcSData: Array[Byte] = Array()
+
+  @Setup(Level.Invocation)
   def setup(): Unit = {
     nestedPar = createNestedPar(nestedSize)
     nestedAnotherPar = createNestedPar(nestedSize)
-    nestedParSData = nestedPar.serialized.value
+    nestedParSData = createNestedPar(nestedSize).serialized.value
 
     parProc = createParProc(parProcSize)
     parProcAnother = createParProc(parProcSize)
-    parProcSData = parProc.serialized.value
+    parProcSData = createParProc(parProcSize).serialized.value
   }
 
   @Benchmark
