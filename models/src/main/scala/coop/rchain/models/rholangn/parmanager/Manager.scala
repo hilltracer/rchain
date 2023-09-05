@@ -52,7 +52,7 @@ object Manager {
     p.serializedSize.flatMap(size => ProtoCodec.encode(size, write))
   }
   def connectiveUsedFn(p: RhoTypeN): Eval[Boolean] = ConnectiveUsed.connectiveUsedFn(p)
-  def evalRequiredFn(p: RhoTypeN): Boolean         = EvalRequired.evalRequiredFn(p)
+  def evalRequiredFn(p: RhoTypeN): Boolean         = EvalRequired.evalRequiredFn(p).result
   def substituteRequiredFn(p: RhoTypeN): Boolean   = SubstituteRequired.substituteRequiredFn(p)
 
   // Deserialize with protobuf

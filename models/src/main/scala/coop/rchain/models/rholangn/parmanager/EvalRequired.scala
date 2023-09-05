@@ -2,46 +2,70 @@ package coop.rchain.models.rholangn.parmanager
 
 import coop.rchain.models.rholangn._
 
+import scala.util.control.TailCalls._
+
 object EvalRequired {
-  def eReq(p: RhoTypeN): Boolean                               = p.evalRequired
-  def eReq(kv: (RhoTypeN, RhoTypeN)): Boolean                  = eReq(kv._1) || eReq(kv._2)
-  def eReq(ps: Seq[RhoTypeN]): Boolean                         = ps.exists(eReq)
-  def eReqKVPairs(kVPairs: Seq[(RhoTypeN, RhoTypeN)]): Boolean = kVPairs.exists(eReq)
+  def eReqSeq(ps: Seq[RhoTypeN]): TailRec[Boolean] =
+    ps match {
+      case head +: tail =>
+        eReq(head).flatMap {
+          case true  => done(true)
+          case false => tailcall(eReqSeq(tail))
+        }
+      case _ => done(false)
+    }
+
+  def eReqKVPair(kv: (RhoTypeN, RhoTypeN)): TailRec[Boolean] =
+    eReq(kv._1).flatMap {
+      case true  => done(true)
+      case false => eReq(kv._2)
+    }
+  def eReqKVPairs(kVPairs: Seq[(RhoTypeN, RhoTypeN)]): TailRec[Boolean] =
+    kVPairs match {
+      case head +: tail =>
+        eReqKVPair(head).flatMap {
+          case true  => done(true)
+          case false => tailcall(eReqKVPairs(tail))
+        }
+      case _ => done(false)
+    }
+
+  def eReq(p: RhoTypeN): TailRec[Boolean] = tailcall(evalRequiredFn(p))
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
-  def evalRequiredFn(input: RhoTypeN): Boolean = input match {
+  def evalRequiredFn(input: RhoTypeN): TailRec[Boolean] = input match {
 
     /** Basic types */
     case p: BasicN =>
       p match {
-        case _: NilN.type    => false
-        case pProc: ParProcN => eReq(pProc.ps)
-        case _               => true
+        case _: NilN.type    => done(false)
+        case pProc: ParProcN => tailcall(eReqSeq(pProc.ps))
+        case _               => done(true)
       }
 
     /** Ground types */
-    case _: GroundN => false
+    case _: GroundN => done(false)
 
     /** Collections */
-    case p: EListN  => eReq(p.ps)
-    case p: ETupleN => eReq(p.ps)
-    case p: ESetN   => eReq(p.ps.toSeq)
-    case p: EMapN   => eReqKVPairs(p.ps.toSeq)
+    case p: EListN  => tailcall(eReqSeq(p.ps))
+    case p: ETupleN => tailcall(eReqSeq(p.ps))
+    case p: ESetN   => tailcall(eReqSeq(p.ps.toSeq))
+    case p: EMapN   => tailcall(eReqKVPairs(p.ps.toSeq))
 
     /** Vars */
-    case _: VarN => true
+    case _: VarN => done(true)
 
     /** Operations */
-    case _: OperationN => true
+    case _: OperationN => done(true)
 
     /** Unforgeable names */
-    case _: UnforgeableN => false
+    case _: UnforgeableN => done(false)
 
     /** Connective */
-    case _: ConnectiveN => false
+    case _: ConnectiveN => done(false)
 
     /** Other types */
-    case p: BundleN => eReq(p.body)
+    case p: BundleN => tailcall(eReq(p.body))
 
     case p => throw new Exception(s"Undefined type $p")
   }
