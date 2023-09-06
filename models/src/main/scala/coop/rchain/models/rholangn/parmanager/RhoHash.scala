@@ -122,7 +122,7 @@ object RhoHash {
       /* N-ary parameter expressions (N-arity constructors) */
       /* ================================================== */
 
-      case p: ParProcN => (arE(PARPROC) +|+ p.ps.traverse(_.rhoHash)).map(hash)
+      case p: ParProcN => (arE(PARPROC) +++ p.psSorted.value.traverse(_.rhoHash)).map(hash)
 
       case p: SendN =>
         (arE(SEND) ++ p.chan.rhoHash ++ hash(p.persistent) +|+ p.args.traverse(_.rhoHash)).map(hash)
@@ -150,10 +150,10 @@ object RhoHash {
       case p: ETupleN => (arE(ETUPLE) +++ p.ps.traverse(_.rhoHash)).map(hash)
       case p: EListN  => (arE(ELIST) +++ p.ps.traverse(_.rhoHash) ++ hashOpt(p.remainder)).map(hash)
       case p: ESetN =>
-        (arE(ESET) +|+ p.ps.toSeq.traverse(_.rhoHash) ++ hashOpt(p.remainder)).map(hash)
+        (arE(ESET) +++ p.psSorted.value.traverse(_.rhoHash) ++ hashOpt(p.remainder)).map(hash)
       case p: EMapN =>
         (arE(EMAP)
-          +|+ p.ps.toSeq.traverse(_.bimap(_.rhoHash, _.rhoHash).mapN(_ ++ _))
+          +++ p.psSorted.value.traverse(_.bimap(_.rhoHash, _.rhoHash).mapN(_ ++ _))
           ++ hashOpt(p.remainder))
           .map(hash)
 
